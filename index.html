@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Iceland Trip - Currency & Format V43</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Montserrat', 'Noto Sans TC', system-ui, sans-serif; 
+            background-color: #F8FAFC; 
+            color: #334155;
+            margin: 0;
+            padding: 0;
+        }
+        [v-cloak] { display: none !important; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Iceland Aurora Gradient */
+        .bg-aurora {
+            background: linear-gradient(135deg, #0f4c75 0%, #3282b8 50%, #00b894 100%);
+        }
+        
+        /* Refined Background */
+        .header-refined-bg {
+            background-color: #F8FAFC; 
+            background-image: linear-gradient(to bottom, #ffffff 0%, #F1F5F9 100%);
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 10px 30px -10px rgba(15, 76, 117, 0.1); 
+            z-index: 50;
+            position: relative;
+        }
+        
+        /* Atmosphere Glow */
+        .header-glow {
+            position: absolute;
+            top: -20%;
+            right: -10%;
+            width: 70%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(50, 130, 184, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Timeline Line Position */
+        .timeline-line {
+            position: absolute;
+            left: 15px;
+            top: 20px;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #cbd5e1 0%, #e2e8f0 100%);
+            z-index: 0;
+        }
+
+        /* Modal Input Style */
+        .modal-input {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 0.85rem;
+            width: 100%;
+            outline: none;
+            transition: all 0.3s;
+            color: #334155;
+            font-weight: 600;
+        }
+        .modal-input:focus {
+            border-color: #3282b8;
+            background-color: #fff;
+            box-shadow: 0 4px 12px rgba(50, 130, 184, 0.1);
+        }
+        
+        /* 16:9 Image Ratio */
+        .ratio-16-9 {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            background-color: #f1f5f9;
+        }
+
+        /* Fade Masks */
+        .fade-mask-left {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 24px;
+            background: linear-gradient(to right, #F8FAFC 20%, transparent);
+            z-index: 20;
+            pointer-events: none;
+        }
+        .fade-mask-right {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 24px;
+            background: linear-gradient(to left, #F8FAFC 20%, transparent);
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* Custom Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-[#F8FAFC]">
+
+<div id="app" class="w-full max-w-md mx-auto bg-[#F8FAFC] min-h-screen flex flex-col relative shadow-none" v-cloak>
+
+    <!-- 1. Header Area -->
+    <div class="sticky top-0 z-50">
+        <div class="header-refined-bg pt-6 px-0 relative pb-0 overflow-hidden">
+            <div class="header-glow"></div>
+            
+            <!-- Top Bar -->
+            <div class="flex justify-between items-center mb-2 px-6 relative z-10">
+                <button @click="openShareModal" class="w-10 h-10 rounded-2xl bg-white/80 flex items-center justify-center text-[#3282b8] hover:bg-white transition-all active:scale-95 shadow-sm border border-slate-100 backdrop-blur-sm">
+                    <i class="fa-solid fa-share-nodes"></i>
+                </button>
+                
+                <!-- Title -->
+                <div class="flex flex-col items-center">
+                    <div class="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase mb-1 drop-shadow-sm">Iceland Trip</div>
+                    <div class="bg-gradient-to-r from-[#0f4c75] to-[#3282b8] px-4 py-1.5 rounded-full shadow-lg shadow-blue-900/10">
+                        <h1 class="text-center font-bold text-xs text-white tracking-wider flex items-center gap-2">
+                            <i class="fa-regular fa-snowflake fa-spin-pulse" style="--fa-animation-duration: 3s;"></i>
+                            2026-03 冰島極光自駕遊
+                            <i class="fa-regular fa-snowflake fa-spin-pulse" style="--fa-animation-duration: 4s;"></i>
+                        </h1>
+                    </div>
+                </div>
+                       
+                <div class="w-10"></div>
+            </div>
+
+            <!-- Calendar Container -->
+            <div class="relative z-10">
+                <div class="fade-mask-left"></div>
+                <div class="fade-mask-right"></div>
+
+                <div class="flex overflow-x-auto gap-3 pl-6 pr-6 pt-2 pb-0 no-scrollbar snap-x cursor-grab active:cursor-grabbing items-center relative z-10">
+                    
+                    <button v-for="d in totalDays" :key="d" @click="switchDay(d)"
+                            class="flex flex-col items-center justify-center transition-all duration-200 flex-shrink-0 w-[68px] py-3 rounded-2xl border snap-center group relative mb-4 bg-white shadow-sm" 
+                            :class="currentDay === d ? 'bg-[#0f4c75] !text-white !border-[#0f4c75] shadow-xl shadow-blue-900/40 ring-1 ring-[#0f4c75]/20' : 'text-slate-400 border-slate-100 hover:bg-white hover:border-slate-200 hover:shadow-md'">
+                        
+                        <span class="text-[9px] font-bold uppercase tracking-wider opacity-70">Day {{ d }}</span>
+                        <!-- Indicator Dot -->
+                        <div class="w-1 h-1 rounded-full my-1.5 transition-all" :class="currentDay === d ? 'bg-[#00b894] w-4' : 'bg-slate-300'"></div>
+                        
+                        <div class="flex flex-col items-center leading-none gap-0.5">
+                            <span class="text-[13px] font-bold font-mono">{{ getDateString(d).date }}</span>
+                            <span class="text-[10px] font-bold opacity-80 font-mono tracking-wider">{{ getDateString(d).day }}</span>
+                        </div>
+                    </button>
+
+                    <!-- Add/Delete Buttons -->
+                    <button @click="addDay" class="flex-shrink-0 w-12 h-12 rounded-2xl border-2 border-dashed border-slate-300 text-slate-400 flex items-center justify-center hover:border-[#3282b8] hover:text-[#3282b8] hover:bg-white transition snap-center mb-4">
+                        <i class="fa-solid fa-plus text-lg"></i>
+                    </button>
+                    <button @click="deleteLastDay" class="flex-shrink-0 w-12 h-12 rounded-2xl border-2 border-dashed border-red-200 text-red-300 flex items-center justify-center hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition snap-center mr-6 mb-4">
+                        <i class="fa-solid fa-trash-can text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Hero / Location Info -->
+    <div class="px-6 pt-7 pb-4 bg-[#F8FAFC] relative z-0">
+        <div class="flex items-center justify-between mb-2">
+            
+            <!-- Location Title -->
+            <div class="flex items-center gap-3 flex-grow mr-2">
+                <div class="w-1.5 h-8 rounded-full bg-aurora"></div> 
+                <input type="text" v-model="safeCurrentItinerary.region" 
+                       class="font-extrabold text-2xl text-slate-800 bg-transparent border-none outline-none w-full placeholder:text-slate-300" 
+                       placeholder="輸入地區...">
+            </div>
+
+            <!-- Weather Widget -->
+            <div class="relative flex-shrink-0">
+                <button @click="weatherMenuOpen = !weatherMenuOpen" 
+                        class="flex items-center gap-2 font-bold text-xs px-3 py-1.5 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition text-slate-600 whitespace-nowrap">
+                    <i class="fa-solid" :class="[getCurrentWeather.icon, getCurrentWeather.color]"></i>
+                    {{ getCurrentWeather.text }} <i class="fa-solid fa-caret-down text-[10px] opacity-40"></i>
+                </button>
+
+                <div v-if="weatherMenuOpen" 
+                     class="absolute top-10 right-0 bg-white shadow-xl shadow-blue-900/10 rounded-2xl p-2 z-50 border border-slate-100 flex flex-col gap-1 w-32 animate-fade-in">
+                    <button v-for="(w, key) in weatherTypes" :key="key"
+                            @click="setWeather(key)"
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 text-left text-xs font-bold text-slate-600 transition">
+                        <i class="fa-solid w-4 text-center text-sm" :class="[w.icon, w.color]"></i>
+                        {{ w.text }}
+                    </button>
+                </div>
+                <div v-if="weatherMenuOpen" @click="weatherMenuOpen = false" class="fixed inset-0 z-40"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Timeline List -->
+    <div class="flex-grow overflow-y-auto px-6 pb-32">
+        <div class="relative">
+            <div class="timeline-line"></div>
+            
+            <div v-for="(item, idx) in currentActivities" :key="item.id || idx" class="relative pl-10 mb-8 group">
+                <!-- Dot -->
+                <div class="absolute left-[11px] top-[7px] w-[10px] h-[10px] rounded-full border-[2px] border-[#3282b8] bg-white z-10 shadow-sm transition-transform duration-300"></div>
+
+                <!-- Header -->
+                <div class="flex justify-between items-baseline mb-2 pr-1 pl-1">
+                    <div class="flex items-center gap-2 text-sm font-bold text-[#0f4c75] font-mono">
+                        <span>{{ item.time }}</span>
+                        <span v-if="item.endTime" class="text-slate-300 text-xs">→</span>
+                        <span v-if="item.endTime">{{ item.endTime }}</span>
+                    </div>
+                    <div v-if="item.distance" class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 bg-white px-2 py-1 rounded-md border border-slate-100 shadow-sm">
+                        <i class="fa-solid fa-route text-slate-300"></i> {{ item.distance }}
+                    </div>
+                </div>
+
+                <!-- Card -->
+                <div class="bg-white rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-shadow duration-300 relative overflow-hidden">
+                    <div class="w-full relative border-b border-slate-50 group/img bg-slate-100 overflow-hidden">
+                         <!-- Smart Image -->
+                         <img :src="getCardImage(item)" 
+                              class="ratio-16-9 object-cover transition-transform duration-700 group-hover:scale-105"
+                              loading="lazy"
+                              @error="handleImageError">
+                         
+                         <div class="absolute inset-0 bg-gradient-to-t from-[#0f4c75]/60 to-transparent opacity-80"></div>
+                         
+                         <button @click="openEditModal(item)" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white hover:text-[#0f4c75] flex items-center justify-center shadow-lg z-10 transition-all hover:scale-110 border border-white/30">
+                            <i class="fa-solid fa-pen text-xs"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-5">
+                        <div class="mb-2">
+                            <h3 class="font-bold text-slate-800 text-lg leading-tight">{{ item.title }}</h3>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed line-clamp-2 mt-2 font-medium tracking-wide">{{ item.desc }}</p>
+                        
+                        <!-- Cost & Tags -->
+                        <div class="flex items-center gap-2 mt-4 flex-wrap">
+                            <span class="text-[10px] px-3 py-1.5 rounded-full font-bold shadow-sm tracking-wide" :class="getCategoryStyle(item.type).badge">
+                                {{ getCategoryStyle(item.type).label }}
+                            </span>
+                            
+                            <!-- Display Costs Array -->
+                            <span v-for="(costItem, cIdx) in item.costs" :key="cIdx" 
+                                  class="text-[10px] px-3 py-1.5 rounded-full font-bold bg-slate-50 text-slate-600 border border-slate-200 flex items-center gap-1">
+                                <span class="text-slate-400 font-normal">
+                                    {{ (costItem.type === 'other' && costItem.name) ? costItem.name : costTypes[costItem.type].label }}:
+                                </span>
+                                <!-- REQ: Currency & Format -->
+                                <span class="font-mono text-slate-600">
+                                    {{ costItem.currency || 'ISK' }} {{ formatMoney(costItem.amount) }}
+                                </span>
+                            </span>
+
+                            <a v-if="getMapLink(item)" :href="getMapLink(item)" target="_blank"
+                               class="text-[10px] text-[#3282b8] font-bold hover:underline flex items-center gap-1.5 ml-auto bg-blue-50 px-3 py-1.5 rounded-full transition-colors hover:bg-blue-100">
+                                <i class="fa-solid fa-location-arrow"></i> 導航
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-if="currentActivities.length === 0" class="flex flex-col items-center justify-center py-16 opacity-40">
+                <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-300 text-3xl animate-float">
+                    <i class="fa-solid fa-wind"></i>
+                </div>
+                <p class="text-sm font-bold text-slate-400">這天還沒有行程喔</p>
+                <p class="text-xs text-slate-400 mt-1">點擊右下角按鈕開始規劃</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAB -->
+    <button @click="openAddModal" 
+            class="absolute bottom-8 right-6 w-16 h-16 bg-aurora text-white rounded-[1.2rem] shadow-2xl shadow-blue-500/30 flex items-center justify-center text-white z-30 group transition-all hover:scale-105 active:scale-95">
+        <i class="fa-solid fa-plus text-2xl group-hover:rotate-90 transition-transform duration-300"></i>
+    </button>
+
+    <!-- Modal -->
+    <div v-if="modal.open" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 pointer-events-none">
+        <div class="absolute inset-0 bg-[#0f4c75]/40 backdrop-blur-sm pointer-events-auto transition-opacity" @click="closeModal"></div>
+        <div class="pointer-events-auto relative bg-white w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden p-8 pb-10 animate-slide-up">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="font-extrabold text-xl text-slate-800">{{ modal.mode === 'add' ? '新增行程' : '編輯行程' }}</h3>
+                <button @click="closeModal" class="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="space-y-6 overflow-y-auto max-h-[60vh] pr-1 no-scrollbar">
+                
+                <!-- Row 1: Time Inputs -->
+                <div class="flex gap-4">
+                    <div class="w-1/2"><label class="block text-xs font-bold text-slate-400 mb-2 pl-1 uppercase tracking-wider">出發時間</label><input type="time" v-model="form.time" class="modal-input"></div>
+                    <div class="w-1/2"><label class="block text-xs font-bold text-slate-400 mb-2 pl-1 uppercase tracking-wider">抵達時間 (選填)</label><input type="time" v-model="form.endTime" class="modal-input"></div>
+                </div>
+
+                <!-- Row 2: Type & Distance -->
+                <div class="flex gap-4">
+                    <div class="w-1/2"><label class="block text-xs font-bold text-slate-400 mb-2 pl-1 uppercase tracking-wider">種類</label><select v-model="form.type" class="modal-input appearance-none bg-[#f8fafc]"><option v-for="(cfg, key) in categories" :value="key">{{ cfg.emoji }} {{ cfg.label }}</option></select></div>
+                    <div class="w-1/2"><label class="block text-xs font-bold text-slate-400 mb-2 pl-1 uppercase tracking-wider">車程/距離</label><input type="text" v-model="form.distance" placeholder="例: 50km" class="modal-input"></div>
+                </div>
+
+                <!-- Section 1: Image -->
+                <div><label class="block text-xs font-bold text-[#3282b8] mb-2 pl-1 uppercase tracking-wider">1. 封面圖片 (留空自動搜尋)</label><input type="text" v-model="form.imgUrl" class="modal-input text-sm" placeholder="輸入圖片網址..."></div>
+
+                <!-- Section 2: Title -->
+                <div><label class="block text-xs font-bold text-[#3282b8] mb-2 pl-1 uppercase tracking-wider">2. 行程標題</label><input type="text" v-model="form.title" class="modal-input text-lg" placeholder="例如: Skógafoss 瀑布"></div>
+
+                <!-- Section 3: Location Group -->
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
+                     <label class="block text-xs font-bold text-[#3282b8] pl-1 uppercase tracking-wider">3. 地點資訊</label>
+                     <div><input type="text" v-model="form.location" class="modal-input bg-white" placeholder="地點名稱"></div>
+                     <div><input type="text" v-model="form.mapUrl" class="modal-input text-sm text-blue-500 bg-white" placeholder="Google Maps 連結"></div>
+                </div>
+
+                <!-- Section 4: Costs (Updated with Currency) -->
+                <div class="bg-blue-50/30 p-4 rounded-2xl border border-blue-100/50">
+                    <div class="flex justify-between items-center mb-2">
+                         <label class="block text-xs font-bold text-[#3282b8] pl-1 uppercase tracking-wider">4. 相關費用 ({{ form.costs.length }})</label>
+                         <button @click="addCost" class="text-[10px] bg-white border border-blue-200 text-blue-500 px-2 py-1 rounded-lg font-bold hover:bg-blue-50"><i class="fa-solid fa-plus"></i> 新增費用</button>
+                    </div>
+                    
+                    <div v-if="form.costs.length === 0" class="text-center py-3 text-xs text-slate-400 bg-white/50 rounded-xl border border-dashed border-slate-200">
+                        無費用紀錄
+                    </div>
+
+                    <div v-for="(c, idx) in form.costs" :key="idx" class="flex flex-col gap-2 mb-3 animate-fade-in bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                        <div class="flex gap-2 items-center">
+                            <!-- Type Select -->
+                            <select v-model="c.type" class="modal-input bg-slate-50 text-xs py-2 w-[35%] appearance-none border-slate-200">
+                                <option v-for="(ct, key) in costTypes" :value="key">{{ ct.label }}</option>
+                            </select>
+                            
+                            <!-- REQ: Currency Toggle -->
+                            <button @click="toggleCurrency(c)" 
+                                    class="h-full px-2 py-2 rounded-lg text-[10px] font-bold border transition-all w-[20%]"
+                                    :class="c.currency === 'HK$' ? 'bg-red-50 text-red-500 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'">
+                                {{ c.currency || 'ISK' }}
+                            </button>
+
+                            <!-- REQ: Amount Input with Formatter -->
+                            <input type="text" 
+                                   v-model="c.amount" 
+                                   @blur="formatInputMoney(c)"
+                                   @focus="unformatInputMoney(c)"
+                                   class="modal-input bg-white text-xs py-2 w-[45%] text-right font-mono" 
+                                   placeholder="0">
+                            
+                            <button @click="removeCost(idx)" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-400 transition ml-1 flex-shrink-0"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div v-if="c.type === 'other'" class="animate-fade-in">
+                            <input type="text" v-model="c.name" class="modal-input bg-blue-50/50 text-xs py-2 w-full border-blue-100" placeholder="輸入費用名稱">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section 5: Note -->
+                <div>
+                    <div class="flex justify-between items-end mb-2">
+                        <label class="block text-xs font-bold text-[#3282b8] pl-1 uppercase tracking-wider">5. 備註</label>
+                        <button @click="autoGenerateDesc" class="text-[10px] flex items-center gap-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-3 py-1.5 rounded-full font-bold shadow-md hover:shadow-lg transition active:scale-95">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> AI 自動填寫
+                        </button>
+                    </div>
+                    <textarea v-model="form.desc" rows="4" class="modal-input resize-none leading-relaxed" placeholder="輸入筆記或點擊 AI 按鈕自動生成..."></textarea>
+                </div>
+
+            </div>
+            <div class="mt-10 flex gap-4">
+                <button v-if="modal.mode === 'edit'" @click="deleteItem" class="p-5 rounded-2xl bg-red-50 text-red-400 hover:bg-red-100 transition font-bold"><i class="fa-solid fa-trash-can text-lg"></i></button>
+                <button @click="saveItem" class="flex-1 py-5 bg-aurora text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 transition active:scale-95">{{ modal.mode === 'add' ? '確認加入' : '儲存變更' }}</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div v-if="shareModal.open" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-[#0f4c75]/50 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl animate-fade-in relative text-center">
+            <button @click="shareModal.open = false" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+            <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#3282b8] text-2xl">
+                <i class="fa-solid fa-share-nodes"></i>
+            </div>
+            <h3 class="font-bold text-xl text-slate-800 mb-6">行程共用</h3>
+            
+            <div class="space-y-4">
+                <button @click="copyData" class="w-full py-4 bg-[#3282b8] hover:bg-[#0f4c75] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition active:scale-95">
+                    <span v-if="!shareModal.copied">複製行程代碼</span>
+                    <span v-else class="flex items-center justify-center gap-2"><i class="fa-solid fa-check"></i> 已複製！</span>
+                </button>
+                
+                <div class="relative py-2">
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-100"></div></div>
+                    <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-2 text-slate-400 font-bold">或</span></div>
+                </div>
+
+                <div class="text-left">
+                     <label class="block text-xs font-bold text-slate-400 mb-2 pl-1 uppercase">匯入朋友的行程</label>
+                     <textarea v-model="shareModal.importData" rows="3" placeholder="在此貼上代碼..." class="w-full text-xs p-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#3282b8] outline-none mb-3 resize-none font-mono"></textarea>
+                     <button @click="importData" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-sm transition">確認匯入</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const { createApp, ref, computed, reactive, watch } = Vue;
+
+const defaultItinerary = {
+    1: { date: "DAY 1", region: "Reykjavik", weather: "sunny", activities: [
+        { id: 1, time: "14:30", endTime: "15:30", type: "car", title: "機場取車", distance: "50km/45min", location: "Keflavík Airport", desc: "抵達機場，檢查車輛狀況，準備前往市區。", costs: [{type:'other', amount:'0', name: '預備金', currency: 'ISK'}] }
+    ]}
+};
+
+const categoryConfig = {
+    flight: { label: '航班', emoji: '✈️', badge: 'bg-blue-500 text-white' },
+    car:    { label: '自駕', emoji: '🚙', badge: 'bg-slate-700 text-white' },
+    hotel:  { label: '住宿', emoji: '🏨', badge: 'bg-indigo-500 text-white' },
+    food:   { label: '美食', emoji: '🍽️', badge: 'bg-orange-400 text-white' },
+    camera: { label: '景點', emoji: '📸', badge: 'bg-[#00b894] text-white' },
+    tour:   { label: '活動', emoji: '🎫', badge: 'bg-[#0984e3] text-white' }, 
+    shop:   { label: '購物', emoji: '🛍️', badge: 'bg-pink-400 text-white' },
+    other:  { label: '其他', emoji: '📌', badge: 'bg-slate-400 text-white' }
+};
+
+const costTypes = {
+    parking: { label: '停車費' },
+    toll:    { label: '路費' },
+    ticket:  { label: '入場費' },
+    stay:    { label: '住宿費' },
+    food:    { label: '餐飲' },
+    gas:     { label: '加油費' },
+    other:   { label: '其他(自訂)' }
+};
+
+const weatherTypes = {
+    sunny: { text: '晴朗', icon: 'fa-sun', color: 'text-amber-400' },
+    cloudy: { text: '多雲', icon: 'fa-cloud', color: 'text-slate-400' },
+    snow: { text: '下雪', icon: 'fa-snowflake', color: 'text-blue-300' },
+    windy: { text: '強風', icon: 'fa-wind', color: 'text-slate-500' },
+    rain: { text: '陣雨', icon: 'fa-cloud-showers-heavy', color: 'text-blue-500' }
+};
+
+createApp({
+    setup() {
+        const currentDay = ref(1);
+        const totalDays = ref(15);
+        const itineraryData = ref({});
+        const modal = reactive({ open: false, mode: 'add' });
+        const shareModal = reactive({ open: false, copied: false, importData: '' });
+        const form = reactive({ id: null, time: '', endTime: '', type: 'camera', title: '', distance: '', location: '', mapUrl: '', imgUrl: '', costs: [], desc: '' });
+        const weatherMenuOpen = ref(false);
+
+        const startDate = new Date('2026-03-22');
+        const daysOfWeek = ['(日)', '(一)', '(二)', '(三)', '(四)', '(五)', '(六)'];
+
+        const getDateString = (dayNum) => {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + (dayNum - 1));
+            return {
+                date: `${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getDate()).padStart(2,'0')}`,
+                day: daysOfWeek[date.getDay()]
+            };
+        };
+
+        const initData = () => {
+            try {
+                const saved = localStorage.getItem('iceland_itinerary_v43');
+                let data = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(defaultItinerary));
+                if (!data || typeof data !== 'object') throw new Error("Data Error");
+                
+                const maxDay = Math.max(...Object.keys(data).map(Number), 15);
+                totalDays.value = maxDay;
+
+                for(let i=1; i<=maxDay; i++) {
+                    if(!data[i]) data[i] = { date: `DAY ${i}`, region: "Reykjavik", weather: "sunny", activities: [] };
+                    if(data[i].activities) {
+                        data[i].activities.forEach(act => {
+                            if(!act.costs) {
+                                act.costs = [];
+                                if(act.cost) {
+                                    act.costs.push({ type: act.costType || 'other', amount: act.cost, name: '', currency: 'ISK' });
+                                }
+                            }
+                            // Migrate Currency if missing
+                            act.costs.forEach(c => {
+                                if(!c.currency) c.currency = 'ISK';
+                            });
+                        });
+                    }
+                }
+                return data;
+            } catch (e) {
+                const clean = JSON.parse(JSON.stringify(defaultItinerary));
+                for(let i=1; i<=15; i++) clean[i] = { date: `DAY ${i}`, region: "Reykjavik", weather: "sunny", activities: [] };
+                return clean;
+            }
+        };
+
+        itineraryData.value = initData();
+
+        const addDay = () => {
+            totalDays.value++;
+            itineraryData.value[totalDays.value] = { date: `DAY ${totalDays.value}`, region: "輸入地點", weather: "sunny", activities: [] };
+        };
+
+        const deleteLastDay = () => {
+            if(totalDays.value <= 1) return alert('至少保留一天！');
+            if(!confirm(`確定刪除 Day ${totalDays.value}?`)) return;
+            delete itineraryData.value[totalDays.value];
+            totalDays.value--;
+            if(currentDay.value > totalDays.value) currentDay.value = totalDays.value;
+        };
+
+        watch([itineraryData, totalDays], () => {
+            localStorage.setItem('iceland_itinerary_v43', JSON.stringify(itineraryData.value));
+        }, { deep: true });
+
+        const safeCurrentItinerary = computed(() => itineraryData.value[currentDay.value] || { date: '', region: '', weather: 'sunny', activities: [] });
+        const currentActivities = computed(() => (safeCurrentItinerary.value.activities || []).sort((a, b) => a.time.localeCompare(b.time)));
+        
+        const getCurrentWeather = computed(() => weatherTypes[safeCurrentItinerary.value.weather || 'sunny'] || weatherTypes.sunny);
+        const setWeather = (key) => { if(itineraryData.value[currentDay.value]) itineraryData.value[currentDay.value].weather = key; weatherMenuOpen.value = false; };
+        const getCategoryStyle = (type) => categoryConfig[type] || categoryConfig.other;
+        
+        const getMapLink = (item) => {
+            if (item.mapUrl && item.mapUrl.trim() !== '') return item.mapUrl;
+            if (item.location && item.location.trim() !== '') return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(item.location);
+            return null;
+        };
+
+        const getCardImage = (item) => {
+            if (item.imgUrl && item.imgUrl.trim() !== '') return item.imgUrl;
+            const keyword = item.title || item.location || 'Iceland nature';
+            const safeKeyword = encodeURIComponent(keyword + ' iceland winter travel');
+            return `https://image.pollinations.ai/prompt/${safeKeyword}?width=600&height=340&nologo=true&seed=${item.id}`;
+        };
+        
+        const handleImageError = (e) => { e.target.src = `https://picsum.photos/seed/${Math.random()}/500/281?grayscale`; };
+
+        // REQ: Money Format Helper
+        const formatMoney = (val) => {
+            if(!val) return '0';
+            // Remove commas first to handle existing ones
+            const clean = String(val).replace(/,/g, '');
+            const num = parseFloat(clean);
+            if(isNaN(num)) return val;
+            return num.toLocaleString('en-US');
+        };
+
+        const openAddModal = () => {
+            modal.mode = 'add';
+            Object.assign(form, { id: Date.now(), time: '09:00', endTime: '', type: 'camera', title: '', distance: '', location: '', mapUrl: '', imgUrl: '', costs: [], desc: '' });
+            modal.open = true;
+        };
+        
+        const openEditModal = (item) => {
+            modal.mode = 'edit';
+            const itemCopy = JSON.parse(JSON.stringify(item));
+            Object.assign(form, itemCopy);
+            
+            if(form.endTime === undefined) form.endTime = '';
+            if(form.distance === undefined) form.distance = '';
+            if(form.imgUrl === undefined) form.imgUrl = '';
+            if(form.mapUrl === undefined) form.mapUrl = '';
+            if(!form.costs) form.costs = [];
+            
+            // Format existing money on load
+            form.costs.forEach(c => {
+                 if(!c.currency) c.currency = 'ISK';
+                 c.amount = formatMoney(c.amount);
+            });
+
+            modal.open = true;
+        };
+
+        const addCost = () => {
+            form.costs.push({ type: 'ticket', amount: '', name: '', currency: 'ISK' });
+        };
+        
+        const removeCost = (idx) => {
+            form.costs.splice(idx, 1);
+        };
+        
+        const toggleCurrency = (c) => {
+            c.currency = c.currency === 'ISK' ? 'HK$' : 'ISK';
+        };
+
+        // Input formatting logic
+        const formatInputMoney = (c) => {
+            c.amount = formatMoney(c.amount);
+        };
+        const unformatInputMoney = (c) => {
+            if(c.amount) c.amount = String(c.amount).replace(/,/g, '');
+        };
+
+        const autoGenerateDesc = () => {
+            const title = form.title.toLowerCase();
+            let text = "";
+
+            if (!title) {
+                alert("請先輸入標題才能產生內容喔！");
+                return;
+            }
+
+            if (title.includes("瀑布") || title.includes("foss")) {
+                text = "壯觀的瀑布景觀，水氣較大，建議穿著防水外套與防滑鞋。若有陽光可見美麗彩虹，適合停留拍照約 45-60 分鐘。";
+            } else if (title.includes("冰川") || title.includes("jökull")) {
+                text = "震撼的冰川體驗，請務必遵從導遊指示。建議穿著保暖衣物、毛帽與手套，並預留充裕時間進行裝備穿戴。";
+            } else if (title.includes("黑沙灘") || title.includes("reynisfjara")) {
+                text = "世界知名的黑沙灘與玄武岩柱群。請特別注意海浪狀況，切勿太靠近海岸線（Sneaker Waves 危險），安全第一。";
+            } else if (title.includes("藍湖") || title.includes("溫泉") || title.includes("lagoon")) {
+                text = "放鬆身心的絕佳去處。請記得提前預約門票，並攜帶泳衣。建議在入場前先沐浴，享受溫暖的泉水與矽泥面膜。";
+            } else if (title.includes("教堂") || title.includes("church")) {
+                text = "冰島獨特的建築地標，可購票登塔俯瞰市區美景。內部莊嚴肅穆，請保持安靜參觀。";
+            } else if (title.includes("機場") || title.includes("airport")) {
+                text = "辦理登機/租車手續。請確認護照、駕照與預訂文件是否齊全。預留緩衝時間以應對突發狀況。";
+            } else if (title.includes("超市") || title.includes("bonus") || title.includes("kronan")) {
+                text = "補給站時間！建議購買飲用水、麵包、零食與簡易食材。Bonus (小豬超市) 通常價格最為實惠，注意營業時間。";
+            } else {
+                text = `準備前往 ${form.title} 探索冰島的自然美景與獨特文化。請隨時留意天氣變化，享受這趟旅程！`;
+            }
+
+            form.desc = text;
+        };
+
+        const closeModal = () => modal.open = false;
+
+        const saveItem = () => {
+             if (!itineraryData.value[currentDay.value].activities) itineraryData.value[currentDay.value].activities = [];
+             const acts = itineraryData.value[currentDay.value].activities;
+             const dataToSave = JSON.parse(JSON.stringify(form));
+             
+             // Ensure amounts are saved with commas for consistency on display
+             dataToSave.costs.forEach(c => c.amount = formatMoney(c.amount));
+
+             if (modal.mode === 'add') acts.push(dataToSave);
+             else {
+                 const idx = acts.findIndex(i => i.id === form.id);
+                 if (idx !== -1) acts[idx] = dataToSave;
+             }
+             closeModal();
+        };
+
+        const deleteItem = () => {
+            if(!confirm('確定要刪除嗎？')) return;
+            const acts = itineraryData.value[currentDay.value].activities;
+            const idx = acts.findIndex(i => i.id === form.id);
+            if (idx !== -1) acts.splice(idx, 1);
+            closeModal();
+        };
+
+        const openShareModal = () => {
+            shareModal.copied = false;
+            shareModal.importData = '';
+            shareModal.open = true;
+        };
+
+        const copyData = () => {
+            const dataStr = JSON.stringify(itineraryData.value);
+            navigator.clipboard.writeText(dataStr).then(() => {
+                shareModal.copied = true;
+                setTimeout(() => shareModal.copied = false, 2000);
+            });
+        };
+
+        const importData = () => {
+            try {
+                if(!shareModal.importData) return alert('請先貼上代碼');
+                const parsed = JSON.parse(shareModal.importData);
+                if(typeof parsed !== 'object') throw new Error();
+                if(!confirm('這將會覆蓋目前的進度，確定嗎？')) return;
+                itineraryData.value = parsed;
+                const maxDay = Math.max(...Object.keys(parsed).map(Number), 15);
+                totalDays.value = maxDay;
+                shareModal.open = false;
+                alert('匯入成功！');
+            } catch(e) {
+                alert('代碼錯誤');
+            }
+        };
+
+        return {
+            currentDay, safeCurrentItinerary, currentActivities, totalDays, addDay, deleteLastDay,
+            categories: categoryConfig, costTypes, weatherTypes, weatherMenuOpen,
+            getCurrentWeather, setWeather, getDateString,
+            modal, form, shareModal,
+            getCategoryStyle, getMapLink, getCardImage, handleImageError,
+            openAddModal, openEditModal, closeModal, saveItem, deleteItem,
+            openShareModal, copyData, importData,
+            addCost, removeCost, toggleCurrency, formatMoney, formatInputMoney, unformatInputMoney, autoGenerateDesc,
+            switchDay: (d) => currentDay.value = d
+        };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
