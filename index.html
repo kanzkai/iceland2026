@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Iceland Trip - V71 Perfect Center</title>
+    <title>Iceland Trip - V74 Seamless</title>
     
     <!-- Libraries -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -45,8 +45,10 @@
         .fade-mask-right { position: absolute; right: 0; top: 0; bottom: 0; width: 24px; background: linear-gradient(to left, #F8FAFC 20%, transparent); z-index: 20; pointer-events: none; }
 
         .bg-aurora { background: linear-gradient(135deg, #0f4c75 0%, #3282b8 50%, #00b894 100%); }
-        /* Exact Dark Blue */
-        .bg-card-custom { background-color: #0B1D35; } 
+        
+        /* Flight Card Colors */
+        .bg-card-top { background-color: #112442; }
+        .bg-card-bottom { background-color: #0B1D35; }
         
         .modal-input { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.8rem; padding: 0.8rem; width: 100%; outline: none; font-weight: 600; transition: all 0.2s; }
         .modal-input:focus { border-color: #3282b8; background-color: #fff; }
@@ -58,30 +60,70 @@
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .animate-slide-up { animation: slideUp 0.3s ease-out; }
         
-        /* Flight Path Animation */
-        .flight-path {
-            stroke-dasharray: 4;
-            animation: dash 60s linear infinite;
-        }
-        @keyframes dash {
-            to { stroke-dashoffset: -100; }
-        }
+        /* === V74: SEAMLESS FLIGHT STYLES === */
         
-        /* Ticket Notch Effect */
+        /* 1. Straight Line Animation */
+        .dashed-line-anim {
+            width: 100%;
+            height: 2px;
+            background-image: linear-gradient(to right, rgba(255,255,255,0.3) 50%, transparent 50%);
+            background-position: top;
+            background-size: 8px 2px; /* Dash length */
+            background-repeat: repeat-x;
+            animation: dashMove 1s linear infinite;
+        }
+        @keyframes dashMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 16px 0; }
+        }
+
+        /* 2. Floating Notches (Absolutely positioned over the seam) */
+        .ticket-seam-container {
+            position: relative;
+            height: 0; /* Important: Takes no vertical space */
+            z-index: 20;
+        }
+
         .ticket-notch-l, .ticket-notch-r {
             position: absolute;
-            top: 50%;
+            top: 0; /* Center on the seam */
             width: 24px;
             height: 24px;
-            background-color: #F8FAFC; /* Match body bg */
+            background-color: #F8FAFC; /* Match BODY background */
             border-radius: 50%;
             transform: translateY(-50%);
-            z-index: 20;
+            z-index: 30;
+            box-shadow: inset 0 0 4px rgba(0,0,0,0.1); 
         }
         .ticket-notch-l { left: -12px; }
         .ticket-notch-r { right: -12px; }
-        
+
+        /* 3. Horizontal Dotted Line on the seam */
+        .seam-dotted-line {
+            position: absolute;
+            top: 0;
+            left: 12px;
+            right: 12px;
+            height: 0;
+            border-top: 2px dashed rgba(50, 130, 184, 0.3);
+            z-index: 25;
+        }
+
+        /* Badge Wrapper to center it perfectly on the seam */
+        .seam-badge-wrapper {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 40;
+        }
+
         .modal-overlay { background-color: rgba(15, 23, 42, 0.6); }
+        
+        /* Shadow for the whole card group */
+        .ticket-shadow {
+            filter: drop-shadow(0 10px 20px rgba(11, 29, 53, 0.2));
+        }
     </style>
 </head>
 <body class="bg-[#F8FAFC]">
@@ -133,124 +175,113 @@
         <div v-show="currentTab !== 'itinerary' && currentTab !== 'map'" class="h-2"></div>
     </div>
 
-    <!-- === TAB 1: FLIGHT (V71 FIXED CENTER) === -->
+    <!-- === TAB 1: FLIGHT (V74 Seamless) === -->
     <div v-show="currentTab === 'flight'" class="px-6 flex-grow overflow-y-auto pt-4 pb-24">
         <div class="flex justify-between items-center mb-6">
             <h3 class="font-bold text-slate-700 text-sm flex items-center"><i class="fa-solid fa-ticket text-blue-400 mr-2"></i>航班資料</h3>
-            <button @click="resetFlights" class="text-[10px] text-slate-300 hover:text-red-400 font-bold">重置</button>
         </div>
 
-        <div v-for="(group, gIdx) in groupedFlights" :key="gIdx" class="mb-8">
-            <!-- TICKET CONTAINER -->
-            <div class="bg-card-custom rounded-[1.5rem] text-white shadow-xl shadow-blue-900/20 relative overflow-hidden">
+        <div v-for="(group, gIdx) in groupedFlights" :key="gIdx" class="mb-8 ticket-shadow">
+            <!-- TICKET CONTAINER START -->
+            <div class="flex flex-col">
                 
-                <!-- TOP SECTION: FLIGHT 1 -->
-                <div class="p-6 pb-12 relative">
+                <!-- 1. TOP SECTION (No bottom radius) -->
+                <div class="bg-card-top text-white p-6 pb-8 relative rounded-t-[1.5rem]">
                     <!-- Top Header -->
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="bg-[#3282b8] text-white text-[12px] font-bold px-4 py-1.5 rounded-full">{{ group.type }}</span>
+                    <div class="flex items-center justify-between mb-5">
+                        <span class="bg-[#3282b8] text-white text-[12px] font-bold px-4 py-1 rounded-full shadow-sm">{{ group.type }}</span>
                         <span class="text-[11px] font-bold text-slate-300 font-mono flex items-center gap-2"><i class="fa-regular fa-calendar"></i> {{ group.date }}</span>
                     </div>
-                    <!-- Separator Line -->
-                    <div class="border-b border-slate-700/50 mb-6"></div>
-
-                    <!-- Flight Code -->
-                    <div class="flex justify-center mb-4">
-                        <div class="text-[13px] text-[#3282b8] font-bold bg-[#112442] px-4 py-1.5 rounded-lg border border-[#3282b8]/30 shadow-sm tracking-wide">{{ group.f1.code }}</div>
+                    
+                    <!-- Flight Number -->
+                    <div class="flex justify-center mb-5">
+                        <div class="text-[13px] text-[#3282b8] font-bold bg-white/5 px-8 py-1.5 rounded-lg border border-[#3282b8]/20 tracking-wider shadow-inner">{{ group.f1.code }}</div>
                     </div>
 
-                    <!-- Route Info -->
-                    <div class="flex justify-between items-center relative z-10 px-1">
+                    <!-- Straight Line Route -->
+                    <div class="flex items-center justify-between px-1">
                         <!-- DEP -->
-                        <div class="text-center w-28">
-                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">{{ group.f1.depCity }}</div>
+                        <div class="text-center w-24">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase mb-1">{{ group.f1.depCity }}</div>
                             <div class="text-[42px] font-black tracking-tighter text-white leading-none mb-1">{{ group.f1.depCode }}</div>
-                            <div class="text-[13px] font-bold font-mono text-slate-300 tracking-wide">{{ group.f1.depTime }}</div>
+                            <div class="text-[13px] font-bold font-mono text-slate-300">{{ group.f1.depTime }}</div>
                         </div>
 
-                        <!-- ARCH & PLANE -->
-                        <div class="flex-grow relative h-20 -mt-6 mx-2">
-                            <svg class="w-full h-12 absolute top-0 left-0" viewBox="0 0 100 40" preserveAspectRatio="none" style="overflow: visible;">
-                                <path d="M0,40 Q50,0 100,40" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="4" />
-                                <path d="M0,40 Q50,0 100,40" fill="none" stroke="white" stroke-width="1" class="flight-path" />
-                            </svg>
-                            <!-- PLANE & TIME MOVED LOWER -->
-                            <div class="absolute top-[36px] left-0 right-0 flex flex-col items-center justify-center gap-1">
-                                <i class="fa-solid fa-plane text-white text-[12px]"></i>
-                                <span class="text-[11px] text-slate-400 font-mono">{{ group.f1.duration }}</span>
+                        <!-- STRAIGHT LINE & PLANE -->
+                        <div class="flex-grow mx-2 flex flex-col items-center justify-center gap-1">
+                            <div class="w-full flex items-center gap-2">
+                                <div class="dashed-line-anim flex-grow"></div>
+                                <i class="fa-solid fa-plane text-white text-[14px] transform rotate-0"></i>
+                                <div class="dashed-line-anim flex-grow"></div>
                             </div>
+                            <span class="text-[10px] text-slate-400 font-mono mt-1">{{ group.f1.duration }}</span>
                         </div>
 
                         <!-- ARR -->
-                        <div class="text-center w-28">
-                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">{{ group.f1.arrCity }}</div>
+                        <div class="text-center w-24">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase mb-1">{{ group.f1.arrCity }}</div>
                             <div class="text-[42px] font-black tracking-tighter text-white leading-none mb-1">{{ group.f1.arrCode }}</div>
-                            <div class="text-[13px] font-bold font-mono text-slate-300 tracking-wide">{{ group.f1.arrTime }}</div>
+                            <div class="text-[13px] font-bold font-mono text-slate-300">{{ group.f1.arrTime }}</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- MIDDLE SECTION: NOTCH & DIVIDER (V71 ADJUSTED) -->
-                <div class="relative h-0">
+                <!-- 2. THE SEAM (Absolute Positioned Elements) -->
+                <!-- No vertical space occupied here, so Top and Bottom touch perfectly -->
+                <div class="ticket-seam-container">
+                    <!-- Physical Notches -->
                     <div class="ticket-notch-l"></div>
                     <div class="ticket-notch-r"></div>
                     
-                    <!-- SVG Dashed Line (Centered Vertically relative to notches) -->
-                    <div class="absolute top-1/2 transform -translate-y-1/2 left-0 w-full h-2 z-10">
-                        <svg width="100%" height="100%" preserveAspectRatio="none">
-                            <line x1="12" y1="50%" x2="calc(100% - 12px)" y2="50%" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="5,5" />
-                        </svg>
-                    </div>
-                    
-                    <!-- Center Badge (Adjusted positioning logic) -->
-                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-                        <div class="bg-[#112442] px-5 py-1.5 border border-[#3282b8]/40 rounded-full shadow-lg flex items-center gap-2">
+                    <!-- Dotted Line overlaying the seam -->
+                    <div class="seam-dotted-line"></div>
+
+                    <!-- Badge Centered on Seam -->
+                    <div class="seam-badge-wrapper">
+                        <div class="bg-[#112442] px-5 py-1.5 border border-[#3282b8]/30 rounded-full shadow-lg flex items-center gap-2">
                             <i class="fa-solid fa-clock text-[#00b894] text-[10px]"></i>
                             <span class="text-[11px] font-bold text-[#00b894] tracking-wide">轉機 {{ group.layover }}</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- BOTTOM SECTION: FLIGHT 2 -->
-                <div class="p-6 pt-10 pb-8 relative bg-[#0B1D35]">
-                    
-                    <!-- Flight Code -->
-                    <div class="flex justify-center mb-4">
-                         <div class="text-[13px] text-[#3282b8] font-bold bg-[#112442] px-4 py-1.5 rounded-lg border border-[#3282b8]/30 shadow-sm tracking-wide">{{ group.f2.code }}</div>
+                <!-- 3. BOTTOM SECTION (No top radius) -->
+                <div class="bg-card-bottom text-white p-6 pt-10 pb-8 rounded-b-[1.5rem]">
+                     <!-- Flight Number -->
+                     <div class="flex justify-center mb-5">
+                        <div class="text-[13px] text-[#3282b8] font-bold bg-white/5 px-8 py-1.5 rounded-lg border border-[#3282b8]/20 tracking-wider shadow-inner">{{ group.f2.code }}</div>
                     </div>
 
-                    <!-- Route Info -->
-                    <div class="flex justify-between items-center relative z-10 px-1">
+                    <!-- Straight Line Route -->
+                    <div class="flex items-center justify-between px-1">
                         <!-- DEP -->
-                        <div class="text-center w-28">
-                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">{{ group.f2.depCity }}</div>
+                        <div class="text-center w-24">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase mb-1">{{ group.f2.depCity }}</div>
                             <div class="text-[42px] font-black tracking-tighter text-white leading-none mb-1">{{ group.f2.depCode }}</div>
-                            <div class="text-[13px] font-bold font-mono text-slate-300 tracking-wide">{{ group.f2.depTime }}</div>
+                            <div class="text-[13px] font-bold font-mono text-slate-300">{{ group.f2.depTime }}</div>
                         </div>
 
-                        <!-- ARCH & PLANE -->
-                        <div class="flex-grow relative h-20 -mt-6 mx-2">
-                            <svg class="w-full h-12 absolute top-0 left-0" viewBox="0 0 100 40" preserveAspectRatio="none" style="overflow: visible;">
-                                <path d="M0,40 Q50,0 100,40" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="4" />
-                                <path d="M0,40 Q50,0 100,40" fill="none" stroke="white" stroke-width="1" class="flight-path" />
-                            </svg>
-                             <!-- PLANE & TIME MOVED LOWER -->
-                             <div class="absolute top-[36px] left-0 right-0 flex flex-col items-center justify-center gap-1">
-                                <i class="fa-solid fa-plane text-white text-[12px]"></i>
-                                <span class="text-[11px] text-slate-400 font-mono">{{ group.f2.duration }}</span>
+                         <!-- STRAIGHT LINE & PLANE -->
+                         <div class="flex-grow mx-2 flex flex-col items-center justify-center gap-1">
+                            <div class="w-full flex items-center gap-2">
+                                <div class="dashed-line-anim flex-grow"></div>
+                                <i class="fa-solid fa-plane text-white text-[14px] transform rotate-0"></i>
+                                <div class="dashed-line-anim flex-grow"></div>
                             </div>
+                            <span class="text-[10px] text-slate-400 font-mono mt-1">{{ group.f2.duration }}</span>
                         </div>
 
                         <!-- ARR -->
-                        <div class="text-center w-28">
-                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">{{ group.f2.arrCity }}</div>
+                        <div class="text-center w-24">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase mb-1">{{ group.f2.arrCity }}</div>
                             <div class="text-[42px] font-black tracking-tighter text-white leading-none mb-1">{{ group.f2.arrCode }}</div>
-                            <div class="text-[13px] font-bold font-mono text-slate-300 tracking-wide">{{ group.f2.arrTime }}</div>
+                            <div class="text-[13px] font-bold font-mono text-slate-300">{{ group.f2.arrTime }}</div>
                         </div>
                     </div>
                 </div>
 
             </div>
+            <!-- TICKET CONTAINER END -->
         </div>
     </div>
 
