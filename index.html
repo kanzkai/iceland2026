@@ -3,8 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Iceland Trip - V92 Stable Sync</title>
+    <title>Iceland Trip - V93 Safe Mode</title>
     
+    <!-- 1. Crash Reporter (最優先載入) -->
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            var extra = error ? "\nStack: " + error.stack : "";
+            alert("⚠️ 程式發生錯誤:\n" + msg + "\n行數: " + line + extra);
+            // 嘗試移除遮罩讓使用者看到介面
+            var loader = document.getElementById('app-loader');
+            if(loader) loader.style.display = 'none';
+        };
+    </script>
+
     <!-- PWA Settings -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f4c75">
@@ -23,7 +34,10 @@
 
     <style>
         body { font-family: 'Montserrat', 'Noto Sans TC', system-ui, sans-serif; background-color: #F8FAFC; color: #334155; margin: 0; padding: 0; }
-        [v-cloak] { display: none !important; }
+        /* 移除 v-cloak 避免完全白屏，改用 loader 遮擋 */
+        /* [v-cloak] { display: none !important; } */
+        
+        #app-loader { position: fixed; inset: 0; background: #0f4c75; z-index: 9999; display: flex; flex-col; align-items: center; justify-content: center; color: white; transition: opacity 0.5s; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         #map-full { height: calc(100vh - 240px); width: 100%; border-radius: 1rem; z-index: 1; }
@@ -59,7 +73,15 @@
 </head>
 <body class="bg-[#F8FAFC]">
 
-<div id="app" class="w-full max-w-md mx-auto min-h-screen flex flex-col relative pb-24" v-cloak>
+<!-- Loading Screen -->
+<div id="app-loader">
+    <div class="text-3xl mb-4"><i class="fa-solid fa-spinner fa-spin"></i></div>
+    <div class="font-bold">正在載入行程...</div>
+    <div class="text-xs opacity-70 mt-2">V93 System Check</div>
+    <button onclick="localStorage.clear(); location.reload();" class="mt-8 px-4 py-2 bg-red-500 rounded text-xs font-bold text-white border border-red-400">重置 App (如果卡住請按此)</button>
+</div>
+
+<div id="app" class="w-full max-w-md mx-auto min-h-screen flex flex-col relative pb-24" style="display: none;">
 
     <!-- Guest/Sync Mode Banner -->
     <div v-if="syncStatus.isGuest" class="bg-orange-500 text-white text-[10px] font-bold text-center py-1 sticky top-0 z-[60] shadow-md">
@@ -211,7 +233,7 @@
         </div>
         <div class="flex justify-between items-end mb-4 px-1"><h3 class="font-bold text-slate-700 text-sm">消費明細</h3><span class="text-[10px] text-slate-400">{{ allExpenses.length }} 筆記錄</span></div>
         <div v-if="allExpenses.length === 0" class="text-center py-8 opacity-40"><div class="text-4xl mb-2 text-slate-300">🧾</div><p class="text-xs text-slate-400">尚無消費記錄</p></div>
-        <div v-for="(exp, idx) in allExpenses" :key="idx" class="expense-item"><div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 text-lg flex-shrink-0" :class="costTypes[exp.type]?.bg || 'bg-slate-100 text-slate-400'"><i class="fa-solid" :class="costTypes[exp.type]?.icon || 'fa-tag'"></i></div><div class="flex-grow min-w-0"><div class="text-xs font-bold text-slate-700 truncate">{{ exp.title }}</div><div class="text-[10px] text-slate-400 font-mono">Day {{ exp.day }} ({{ getDateString(exp.day).date }})</div></div><div class="text-right flex-shrink-0 mr-2"><div class="text-xs font-bold font-mono text-slate-800">{{ exp.currency }} {{ formatMoney(exp.amount) }}</div><div class="text-[9px] text-slate-400" v-if="exp.currency !== 'HK$'">≈ HK$ {{ formatMoney(Math.round(parseMoney(exp.amount) * exchangeRate)) }}</div></div><div v-if="exp.isManual && !syncStatus.isGuest" class="flex items-center gap-1 border-l pl-2 ml-1 border-slate-100"><button @click="openEditExpenseModal(exp)" class="text-slate-300 hover:text-blue-500 w-6 h-6 flex items-center justify-center"><i class="solid fa-pen text-xs"></i></button><button @click="deleteManualExpense(exp.day, exp.id)" class="text-slate-300 hover:text-red-400 w-6 h-6 flex items-center justify-center"><i class="fa-solid fa-trash-can text-xs"></i></button></div></div>
+        <div v-for="(exp, idx) in allExpenses" :key="idx" class="expense-item"><div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 text-lg flex-shrink-0" :class="costTypes[exp.type] ? costTypes[exp.type].bg : 'bg-slate-100 text-slate-400'"><i class="fa-solid" :class="costTypes[exp.type] ? costTypes[exp.type].icon : 'fa-tag'"></i></div><div class="flex-grow min-w-0"><div class="text-xs font-bold text-slate-700 truncate">{{ exp.title }}</div><div class="text-[10px] text-slate-400 font-mono">Day {{ exp.day }} ({{ getDateString(exp.day).date }})</div></div><div class="text-right flex-shrink-0 mr-2"><div class="text-xs font-bold font-mono text-slate-800">{{ exp.currency }} {{ formatMoney(exp.amount) }}</div><div class="text-[9px] text-slate-400" v-if="exp.currency !== 'HK$'">≈ HK$ {{ formatMoney(Math.round(parseMoney(exp.amount) * exchangeRate)) }}</div></div><div v-if="exp.isManual && !syncStatus.isGuest" class="flex items-center gap-1 border-l pl-2 ml-1 border-slate-100"><button @click="openEditExpenseModal(exp)" class="text-slate-300 hover:text-blue-500 w-6 h-6 flex items-center justify-center"><i class="solid fa-pen text-xs"></i></button><button @click="deleteManualExpense(exp.day, exp.id)" class="text-slate-300 hover:text-red-400 w-6 h-6 flex items-center justify-center"><i class="fa-solid fa-trash-can text-xs"></i></button></div></div>
         <button v-if="!syncStatus.isGuest" @click="openExpenseModal" class="fixed bottom-24 right-6 bg-[#3282b8] text-white px-5 py-3 rounded-xl shadow-xl font-bold text-xs flex items-center gap-2 active:scale-95 transition z-30"><i class="fa-solid fa-plus"></i> 記一筆</button>
     </div>
 
@@ -333,4 +355,241 @@
     </div>
 
     <!-- MODAL: ADD/EDIT ACTIVITY -->
-    <div v-if="modal.open" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"><div class="absolute inset-0 modal-overlay transition-opacity" @click="modal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-6"><h3 class="font-extrabold text-xl text-slate-800">{{ modal.mode==='add'?'新增':'編輯' }}行程</h3><button @click="modal.open=false" class="w-8 h-8 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100"><i class="fa-solid fa-xmark"></i></button></div><div class="space-y-5"><div class="flex gap-4"><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">時間</label><input type="time" v-model="form.time" class="modal-input"></div><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">抵達(選填)</label><input type="time" v-model="form.endTime" class="modal-input"></div></div><div class="flex gap-4"><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">種類</label><select v-model="form.type" class="modal-input"><option v-for="(v,k) in categoryConfig" :value="k">{{v.emoji}} {{v.label}}</option></select></div><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">距離</label><input v-model="form.distance" class="modal-input"></div></div><div><label class="text-xs font-bold text-[#3282b8] mb-1.5 block">1. 圖片網址</label><input v-model="form.imgUrl" class="modal-input text-xs" placeholder="留空將由 AI 自動產生"></div><div><label class="text-xs font-bold text-[#3282b8] mb-1.5 block">2. 標題</label><input v-model="form.title" class="modal-input text-lg placeholder:text-slate-300" placeholder="例如: Skógafoss"></div><div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2"><label class="text-xs font-bold text-[#3282b8] block">3. 地點 & 定位</label><div class="flex gap-2"><input v-model="form.location" class="modal-input bg-white" placeholder="輸入地點名稱搜尋"><button @click="autoLocate" class="w-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center transition active:scale-95"><i class="fa-solid" :class="locating?'fa-spinner fa-spin':'fa-map-location-dot'"></i></button></div><div class="flex gap-2 text-[10px] items-center"><input type="number" v-model.number="form.lat" class="border p-1.5 rounded-lg w-20 text-center" placeholder="Lat"><input type="number" v-model.number="form.lng" class="border p-1.5 rounded-lg w-20 text-center" placeholder="Lng"><span v-if="form.lat" class="text-green-600 font-bold ml-auto flex items-center gap-1"><i class="fa-solid fa-check-circle"></i> 已定位</span></div><input v-model="form.mapUrl" class="modal-input
+    <div v-if="modal.open" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"><div class="absolute inset-0 modal-overlay transition-opacity" @click="modal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-6"><h3 class="font-extrabold text-xl text-slate-800">{{ modal.mode==='add'?'新增':'編輯' }}行程</h3><button @click="modal.open=false" class="w-8 h-8 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100"><i class="fa-solid fa-xmark"></i></button></div><div class="space-y-5"><div class="flex gap-4"><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">時間</label><input type="time" v-model="form.time" class="modal-input"></div><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">抵達(選填)</label><input type="time" v-model="form.endTime" class="modal-input"></div></div><div class="flex gap-4"><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">種類</label><select v-model="form.type" class="modal-input"><option v-for="(v,k) in categoryConfig" :value="k">{{v.emoji}} {{v.label}}</option></select></div><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">距離</label><input v-model="form.distance" class="modal-input"></div></div><div><label class="text-xs font-bold text-[#3282b8] mb-1.5 block">1. 圖片網址</label><input v-model="form.imgUrl" class="modal-input text-xs" placeholder="留空將由 AI 自動產生"></div><div><label class="text-xs font-bold text-[#3282b8] mb-1.5 block">2. 標題</label><input v-model="form.title" class="modal-input text-lg placeholder:text-slate-300" placeholder="例如: Skógafoss"></div><div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2"><label class="text-xs font-bold text-[#3282b8] block">3. 地點 & 定位</label><div class="flex gap-2"><input v-model="form.location" class="modal-input bg-white" placeholder="輸入地點名稱搜尋"><button @click="autoLocate" class="w-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center transition active:scale-95"><i class="fa-solid" :class="locating?'fa-spinner fa-spin':'fa-map-location-dot'"></i></button></div><div class="flex gap-2 text-[10px] items-center"><input type="number" v-model.number="form.lat" class="border p-1.5 rounded-lg w-20 text-center" placeholder="Lat"><input type="number" v-model.number="form.lng" class="border p-1.5 rounded-lg w-20 text-center" placeholder="Lng"><span v-if="form.lat" class="text-green-600 font-bold ml-auto flex items-center gap-1"><i class="fa-solid fa-check-circle"></i> 已定位</span></div><input v-model="form.mapUrl" class="modal-input bg-white text-xs text-blue-500" placeholder="Google Maps 連結 (選填)"></div><div class="bg-blue-50/30 p-4 rounded-2xl border border-blue-100/50"><div class="flex justify-between mb-2 items-center"><label class="text-xs font-bold text-[#3282b8]">4. 相關費用</label><button @click="addCost" class="text-[10px] bg-white border border-blue-200 text-blue-500 px-2 py-1 rounded-lg font-bold hover:bg-blue-50"><i class="fa-solid fa-plus"></i> 新增</button></div><div v-for="(c,i) in form.costs" :key="i" class="flex flex-col gap-1.5 mb-2 bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm"><div class="flex gap-2 items-center"><select v-model="c.type" class="bg-slate-50 text-xs w-[35%] border-none rounded-lg py-1.5 font-bold text-slate-600"><option v-for="(v,k) in costTypes" :value="k">{{v.label}}</option></select><button @click="c.currency = c.currency==='ISK'?'HK$':'ISK'" class="text-[10px] w-[15%] border rounded-lg py-1.5 font-bold transition-colors" :class="c.currency==='HK$'?'text-red-500 bg-red-50 border-red-100':'text-blue-500 bg-blue-50 border-blue-100'">{{c.currency}}</button><input v-model="c.amount" @blur="formatCostInput(c)" class="text-xs w-[40%] bg-slate-50 border-none rounded-lg px-2 py-1.5 text-right font-mono font-bold" placeholder="0"><button @click="form.costs.splice(i,1)" class="text-slate-300 hover:text-red-400 w-[10%]"><i class="fa-solid fa-xmark"></i></button></div><input v-if="c.type==='other'" v-model="c.name" class="text-xs border border-slate-100 bg-slate-50 rounded-lg px-2 py-1.5 w-full" placeholder="費用名稱"></div></div><div><div class="flex justify-between mb-2 items-center"><label class="text-xs font-bold text-[#3282b8]">5. 備註</label><button @click="autoGenerateDesc" class="text-[10px] bg-purple-100 text-purple-600 px-3 py-1 rounded-full font-bold shadow-sm hover:bg-purple-200 transition"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 撰寫</button></div><textarea v-model="form.desc" class="modal-input leading-relaxed" rows="3" placeholder="輸入行程備註..."></textarea></div></div><div class="mt-8 flex gap-4"><button v-if="modal.mode==='edit'" @click="deleteItem" class="p-4 bg-red-50 text-red-400 rounded-2xl hover:bg-red-100 transition"><i class="fa-solid fa-trash-can text-lg"></i></button><button @click="saveItem" class="flex-1 bg-aurora text-white rounded-2xl py-4 font-bold text-lg shadow-xl shadow-blue-500/20 active:scale-95 transition">儲存確認</button></div></div></div>
+
+</div>
+
+<script>
+const { createApp, ref, computed, reactive, watch, nextTick, onMounted } = Vue;
+
+const categoryConfig = { flight: { label: '航班', emoji: '✈️', badge: 'bg-blue-500 text-white' }, car: { label: '自駕', emoji: '🚙', badge: 'bg-slate-700 text-white' }, hotel: { label: '住宿', emoji: '🏨', badge: 'bg-indigo-500 text-white' }, food: { label: '美食', emoji: '🍽️', badge: 'bg-orange-400 text-white' }, camera: { label: '景點', emoji: '📸', badge: 'bg-[#00b894] text-white' }, tour: { label: '活動', emoji: '🎫', badge: 'bg-[#0984e3] text-white' }, shop: { label: '購物', emoji: '🛍️', badge: 'bg-pink-400 text-white' }, other: { label: '其他', emoji: '📌', badge: 'bg-slate-400 text-white' } };
+const costTypes = { 
+    parking: { label: '停車費', bg: 'bg-slate-100 text-slate-500', icon: 'fa-square-parking' }, 
+    toll: { label: '路費', bg: 'bg-slate-100 text-slate-500', icon: 'fa-road' }, 
+    ticket: { label: '入場費', bg: 'bg-purple-50 text-purple-500', icon: 'fa-ticket' }, 
+    stay: { label: '住宿費', bg: 'bg-indigo-50 text-indigo-500', icon: 'fa-bed' }, 
+    food: { label: '餐飲', bg: 'bg-orange-50 text-orange-400', icon: 'fa-utensils' }, 
+    gas: { label: '入油費', bg: 'bg-red-50 text-red-500', icon: 'fa-gas-pump' }, 
+    shopping: { label: '購物', bg: 'bg-pink-50 text-pink-400', icon: 'fa-bag-shopping' },
+    other: { label: '其他', bg: 'bg-slate-100 text-slate-400', icon: 'fa-tag' } 
+};
+const weatherTypes = { sunny: { text: '晴朗', icon: 'fa-sun', color: 'text-amber-400' }, cloudy: { text: '多雲', icon: 'fa-cloud', color: 'text-slate-400' }, snow: { text: '下雪', icon: 'fa-snowflake', color: 'text-blue-300' }, windy: { text: '強風', icon: 'fa-wind', color: 'text-slate-500' }, rain: { text: '陣雨', icon: 'fa-cloud-showers-heavy', color: 'text-blue-500' } };
+const PRESET_FLIGHTS = [{ type: '去程', date: '2026-03-22 (SUN)', nextDate: '2026-03-23 (MON)', f1: { code: 'AY100', depCity: 'HONG KONG', depCode: 'HKG', depTime: '21:45', arrCity: 'HELSINKI', arrCode: 'HEL', arrTime: '05:45', duration: '14h' }, layover: '1hr 35m', f2: { code: 'AY991', depCity: 'HELSINKI', depCode: 'HEL', depTime: '07:20', arrCity: 'REYKJAVIK', arrCode: 'KEF', arrTime: '09:15', duration: '3h 55m' } },{ type: '回程', date: '2026-04-05 (SUN)', nextDate: '2026-04-06 (MON)', f1: { code: 'AY994', depCity: 'REYKJAVIK', depCode: 'KEF', depTime: '17:10', arrCity: 'HELSINKI', arrCode: 'HEL', arrTime: '23:35', duration: '3h 25m' }, layover: '1hr', f2: { code: 'AY099', depCity: 'HELSINKI', depCode: 'HEL', depTime: '00:35', arrCity: 'HONG KONG', arrCode: 'HKG', arrTime: '17:40', duration: '12h 05m' } }];
+
+createApp({
+    setup() {
+        const currentTab = ref('flight'); const currentDay = ref(1); const totalDays = ref(15);
+        const itineraryData = ref({}); const infoData = ref({ hotels: [] }); const exchangeRate = ref(0.056);
+        const mapFilter = ref('day'); const weatherMenuOpen = ref(false); const locating = ref(false);
+        const modal = reactive({ open: false, mode: 'add' }); const infoModal = reactive({ open: false, type: 'hotel' }); const rateModal = reactive({ open: false }); 
+        const expenseModal = reactive({ open: false, mode: 'add' }); 
+        const welcomeModal = reactive({ open: false });
+        const syncModal = reactive({ open: false });
+        const gistConfig = reactive({ id: '', token: '' });
+        const syncStatus = reactive({ isGuest: false, unsaved: false });
+
+        const form = reactive({ id: null, time: '', endTime: '', type: 'camera', title: '', distance: '', location: '', lat: null, lng: null, mapUrl: '', imgUrl: '', costs: [], desc: '' });
+        const infoForm = reactive({ name: '', dates: '', link: '' });
+        const expenseForm = reactive({ id: null, originalDay: 1, day: 1, type: 'food', title: '', currency: 'ISK', amount: '' });
+        let mapInstance = null; let markers = []; let routeLine = null; const startDate = new Date('2026-03-22'); const daysOfWeek = ['(日)', '(一)', '(二)', '(三)', '(四)', '(五)', '(六)'];
+
+        const init = () => {
+            try {
+                // Safe JSON parse for config
+                const savedGist = localStorage.getItem('iceland_gist_config');
+                if(savedGist) {
+                    try { Object.assign(gistConfig, JSON.parse(savedGist)); } catch(e) { console.error("Gist config corrupt"); }
+                }
+                if(gistConfig.id && !gistConfig.token) syncStatus.isGuest = true;
+
+                // Safe JSON parse for data
+                const d = localStorage.getItem('iceland_v80_data') || localStorage.getItem('iceland_v71_data'); 
+                let data = {};
+                try { data = d ? JSON.parse(d) : {}; } catch(e) { console.error("Data corrupt"); alert("本地資料損毀，將重置"); }
+                
+                const dayKeys = Object.keys(data).map(Number); totalDays.value = Math.max(dayKeys.length > 0 ? Math.max(...dayKeys) : 15, 15);
+                for(let k=1; k<=totalDays.value; k++) { 
+                    if(!data[k]) data[k] = { date: `DAY ${k}`, region: "", weather: "sunny", temp: "", activities: [], manualExpenses: [] }; 
+                    else {
+                        if(!data[k].manualExpenses) data[k].manualExpenses = []; 
+                        if(!data[k].activities) data[k].activities = []; 
+                        // Fix for activities costs defaults
+                        data[k].activities.forEach(a => { 
+                            if(!a.costs) a.costs = []; 
+                            a.costs.forEach(c => { if(!c.currency) c.currency = 'ISK'; }); 
+                        });
+                    }
+                }
+                itineraryData.value = data; 
+                
+                // Safe info load
+                const i = localStorage.getItem('iceland_v80_info') || localStorage.getItem('iceland_v71_info'); 
+                try { infoData.value = i ? JSON.parse(i) : { hotels: [] }; } catch(e) { infoData.value = { hotels: [] }; }
+                
+                const r = localStorage.getItem('iceland_rate'); if(r) exchangeRate.value = parseFloat(r);
+                
+                // Logic for Welcome / Sync
+                const isEmpty = !d || Object.keys(data).length === 0 || (Object.keys(data).length <= 15 && Object.values(data).every(d => (!d.activities || d.activities.length===0) && (!d.manualExpenses || d.manualExpenses.length===0)));
+                if(isEmpty && !gistConfig.id) {
+                    welcomeModal.open = true;
+                } else if (gistConfig.id && syncStatus.isGuest) {
+                    pullFromCloud();
+                }
+            } catch(e) {
+                alert("初始化失敗: " + e.message);
+            }
+        }; 
+        
+        init();
+        
+        onMounted(() => {
+            // Remove Loader when Vue is ready
+            const loader = document.getElementById('app-loader');
+            if(loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }
+            document.getElementById('app').style.display = 'flex';
+        });
+        
+        watch([itineraryData, infoData, exchangeRate, totalDays], () => { 
+            if(!syncStatus.isGuest) {
+                localStorage.setItem('iceland_v80_data', JSON.stringify(itineraryData.value)); 
+                localStorage.setItem('iceland_v80_info', JSON.stringify(infoData.value)); 
+                localStorage.setItem('iceland_rate', exchangeRate.value);
+                syncStatus.unsaved = true; 
+            }
+        }, { deep: true });
+
+        watch(gistConfig, () => { localStorage.setItem('iceland_gist_config', JSON.stringify(gistConfig)); }, { deep: true });
+
+        const openGuestSetup = () => { welcomeModal.open = false; syncModal.open = true; };
+
+        const pullFromCloud = async () => {
+            if(!gistConfig.id) return alert("請輸入 Gist ID");
+            try {
+                const cleanId = gistConfig.id.trim();
+                const res = await fetch(`https://api.github.com/gists/${cleanId}`);
+                if(!res.ok) throw new Error("找不到 Gist (ID 可能錯誤)");
+                const gist = await res.json();
+                const file = gist.files['iceland.json'];
+                if(!file) throw new Error("Gist 內找不到 iceland.json");
+                
+                const p = JSON.parse(file.content);
+                if(p.data) {
+                    itineraryData.value = p.data;
+                    if(p.info) infoData.value = p.info;
+                    if(p.rate) exchangeRate.value = p.rate;
+                    const days = Object.keys(p.data).map(Number);
+                    totalDays.value = days.length ? Math.max(...days, 15) : 15;
+                    syncStatus.unsaved = false;
+                    if(!gistConfig.token) syncStatus.isGuest = true;
+                    alert("☁️ 下載成功！");
+                    syncModal.open = false;
+                }
+            } catch(e) { alert("同步失敗: " + e.message); }
+        };
+
+        const pushToCloud = async () => {
+            if(!gistConfig.id || !gistConfig.token) return alert("請輸入 ID 和 Token");
+            try {
+                const content = JSON.stringify({ data: itineraryData.value, info: infoData.value, rate: exchangeRate.value }, null, 2);
+                const res = await fetch(`https://api.github.com/gists/${gistConfig.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `token ${gistConfig.token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ files: { 'iceland.json': { content: content } } })
+                });
+                if(!res.ok) throw new Error("Update Failed");
+                syncStatus.unsaved = false;
+                alert("✅ 上傳成功！");
+                syncModal.open = false;
+            } catch(e) { alert("上傳失敗: " + e.message); }
+        };
+
+        const copyID = async () => {
+             if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(gistConfig.id); alert("✅ ID 已複製！");
+            } else { prompt("複製 ID:", gistConfig.id); }
+        };
+        
+        const resetSync = () => {
+            if(confirm('確定要登出並清除同步設定？')) {
+                gistConfig.id = ''; gistConfig.token = ''; syncStatus.isGuest = false; syncModal.open = false;
+                alert("已登出。");
+            }
+        };
+
+        const safeCurrentItinerary = computed(() => { if(!itineraryData.value[currentDay.value]) itineraryData.value[currentDay.value] = { date: `DAY ${currentDay.value}`, region: "", weather: "sunny", temp: "", activities: [], manualExpenses: [] }; return itineraryData.value[currentDay.value]; });
+        const currentActivities = computed(() => (safeCurrentItinerary.value.activities || []).sort((a, b) => a.time.localeCompare(b.time)));
+        const getCurrentWeather = computed(() => weatherTypes[safeCurrentItinerary.value.weather || 'sunny'] || weatherTypes.sunny);
+        const groupedFlights = computed(() => PRESET_FLIGHTS);
+        const parseMoney = (val) => parseFloat(String(val).replace(/,/g, '')) || 0;
+        
+        const categoryStats = computed(() => {
+            const map = {};
+            Object.keys(costTypes).forEach(k => map[k] = 0);
+            allExpenses.value.forEach(e => {
+                const amt = e.currency === 'HK$' ? parseMoney(e.amount) : parseMoney(e.amount) * exchangeRate.value;
+                if(map[e.type] !== undefined) map[e.type] += amt; else map.other += amt;
+            });
+            return Object.entries(map).map(([key, val]) => ({ key, ...costTypes[key], amount: val })).filter(x => x.amount > 0).sort((a,b) => b.amount - a.amount);
+        });
+
+        const allExpenses = computed(() => {
+            let list = [];
+            for(let i=1; i<=totalDays.value; i++) {
+                const d = itineraryData.value[i];
+                // ES2020 fix: remove optional chaining ?.
+                if(d && d.activities) d.activities.forEach(a => a.costs.forEach(c => { if(parseMoney(c.amount) > 0) list.push({ day: i, title: c.name || a.title || '行程費用', type: c.type, currency: c.currency, amount: c.amount, isManual: false }); }));
+                if(d && d.manualExpenses) d.manualExpenses.forEach(m => list.push({ day: i, title: m.title, id: m.id, type: m.type, currency: m.currency, amount: m.amount, isManual: true }));
+            }
+            return list.sort((a,b) => a.day - b.day);
+        });
+        const totalTripCostHKD = computed(() => { let total = 0; allExpenses.value.forEach(e => { const amt = parseMoney(e.amount); total += (e.currency === 'HK$' ? amt : amt * exchangeRate.value); }); return Math.round(total); });
+        
+        const getDateString = (d) => { const date = new Date(startDate); date.setDate(startDate.getDate() + (d - 1)); return { date: `${date.getMonth()+1}/${date.getDate()}`, day: daysOfWeek[date.getDay()] }; };
+        const formatMoney = (val) => { if (!val && val !== 0) return '0'; return parseFloat(String(val).replace(/,/g, '')).toLocaleString('en-US'); };
+        const formatCostInput = (c) => { c.amount = formatMoney(c.amount); };
+        const formatTemp = () => { let val = safeCurrentItinerary.value.temp; if(val && !isNaN(parseFloat(val)) && !val.includes('°C')) safeCurrentItinerary.value.temp = val + '°C'; };
+        const getCostLabel = (c) => { if(c.type === 'other' && c.name) return c.name; return costTypes[c.type] ? costTypes[c.type].label : '費用'; };
+
+        const openExpenseModal = () => { expenseModal.mode = 'add'; expenseForm.day = currentDay.value; expenseForm.type = 'food'; expenseForm.title = ''; expenseForm.amount = ''; expenseForm.currency = 'ISK'; expenseModal.open = true; };
+        const openEditExpenseModal = (exp) => { expenseModal.mode = 'edit'; expenseForm.id = exp.id; expenseForm.originalDay = exp.day; expenseForm.day = exp.day; expenseForm.type = exp.type; expenseForm.title = exp.title; expenseForm.amount = parseMoney(exp.amount); expenseForm.currency = exp.currency; expenseModal.open = true; };
+        const saveManualExpense = () => {
+             if(!expenseForm.amount) return alert("請輸入金額");
+             if(expenseModal.mode === 'edit') { const oldArr = itineraryData.value[expenseForm.originalDay].manualExpenses; const oldIdx = oldArr.findIndex(x => x.id === expenseForm.id); if(oldIdx !== -1) oldArr.splice(oldIdx, 1); }
+             if(!itineraryData.value[expenseForm.day].manualExpenses) itineraryData.value[expenseForm.day].manualExpenses = [];
+             itineraryData.value[expenseForm.day].manualExpenses.push({ id: expenseForm.id || Date.now(), type: expenseForm.type, title: expenseForm.title || costTypes[expenseForm.type].label, currency: expenseForm.currency, amount: formatMoney(expenseForm.amount) });
+             expenseModal.open = false;
+        };
+        const deleteManualExpense = (day, id) => { if(confirm("刪除此筆記錄？")) { const arr = itineraryData.value[day].manualExpenses; const idx = arr.findIndex(x => x.id === id); if(idx !== -1) arr.splice(idx, 1); } };
+
+        const initMap = () => { const el = document.getElementById('map-full'); if(!el) return; if(!mapInstance) { mapInstance = L.map('map-full', { zoomControl: false }).setView([64.9631, -19.0208], 6); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance); } setTimeout(() => { mapInstance.invalidateSize(); updateMapLayers(); }, 100); };
+        const updateMapLayers = () => { 
+            if(!mapInstance) return; 
+            markers.forEach(m => mapInstance.removeLayer(m)); markers = []; 
+            if(routeLine) mapInstance.removeLayer(routeLine); 
+            let list = []; 
+            if(mapFilter.value === 'day') list = currentActivities.value; 
+            else Object.values(itineraryData.value).forEach(d => { if(d.activities) list.push(...d.activities); }); 
+            const points = []; 
+            list.forEach(item => { if(item.lat && item.lng) { const m = L.marker([item.lat, item.lng]).addTo(mapInstance); m.bindPopup(`<b>${item.title}</b><br>${item.time}`); markers.push(m); points.push([item.lat, item.lng]); } }); 
+            if(points.length > 0) { if(mapFilter.value === 'day' && points.length > 1) routeLine = L.polyline(points, { color: '#3282b8', weight: 3 }).addTo(mapInstance); const group = new L.featureGroup(markers); mapInstance.fitBounds(group.getBounds(), { padding: [50, 50] }); } 
+        };
+        
+        const switchTab = (t) => { currentTab.value = t; if(t === 'map') nextTick(initMap); }; watch(currentDay, () => { if(currentTab.value === 'map') nextTick(updateMapLayers); });
+        const addDay = () => { totalDays.value++; itineraryData.value[totalDays.value] = { date: `DAY ${totalDays.value}`, region: "地點", weather: "sunny", temp: "", activities: [], manualExpenses: [] }; }; const deleteLastDay = () => { if(totalDays.value>1 && confirm('刪除最後一天?')) { delete itineraryData.value[totalDays.value]; totalDays.value--; } };
+        const openAddModal = () => { modal.mode = 'add'; Object.assign(form, { id: Date.now(), time: '09:00', endTime: '', type: 'camera', title: '', distance: '', location: '', lat: null, lng: null, mapUrl: '', imgUrl: '', costs: [], desc: '' }); modal.open = true; }; const openEditModal = (item) => { modal.mode = 'edit'; Object.assign(form, JSON.parse(JSON.stringify(item))); if(!form.costs) form.costs = []; form.costs.forEach(c => c.amount = formatMoney(c.amount)); modal.open = true; }; const addCost = () => form.costs.push({ type: 'ticket', amount: '', currency: 'ISK', name: '' });
+        const saveItem = () => { if (!itineraryData.value[currentDay.value].activities) itineraryData.value[currentDay.value].activities = []; const acts = itineraryData.value[currentDay.value].activities; const data = JSON.parse(JSON.stringify(form)); data.costs.forEach(c => c.amount = formatMoney(c.amount)); if(modal.mode === 'add') acts.push(data); else { const idx = acts.findIndex(i => i.id === form.id); if(idx !== -1) acts[idx] = data; } modal.open = false; }; const deleteItem = () => { if(confirm('確定刪除?')) { const acts = itineraryData.value[currentDay.value].activities; const idx = acts.findIndex(i => i.id === form.id); if(idx !== -1) acts.splice(idx, 1); modal.open = false; } };
+        const openInfoModal = (type) => { infoModal.type = type; Object.assign(infoForm, { name: '', dates: '', link: '' }); infoModal.open = true; }; const saveInfo = () => { if(infoModal.type === 'hotel') infoData.value.hotels.push({ ...infoForm }); infoModal.open = false; }; const removeInfo = (list, idx) => { if(confirm('刪除?')) infoData.value[list].splice(idx, 1); };
+        
+        const autoLocate = async () => { if(!form.location) return alert("請輸入地點"); locating.value = true; try { const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(form.location + " Iceland") + '&limit=1'); const data = await res.json(); if(data.length) { form.lat = parseFloat(data[0].lat); form.lng = parseFloat(data[0].lon); form.mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(form.location); } else alert("找不到地點"); } catch(e) { alert("定位錯誤"); } locating.value = false; }; 
+        const autoGenerateDesc = () => { const t = form.title || ''; if(t.includes('瀑布')) form.desc = '壯觀瀑布，注意防水。'; else if(t.includes('超市')) form.desc = '補給時間，Bonus 最平。'; else form.desc = '前往 ' + t + ' 探索美景。'; };
+        
+        const getCardImage = (item) => item.imgUrl || 'https://image.pollinations.ai/prompt/' + encodeURIComponent((item.title||'Iceland')+' travel') + '?width=400&height=225&nologo=true'; const handleImageError = (e) => e.target.src = 'https://picsum.photos/seed/' + Math.random() + '/400/225?grayscale'; const getCategoryStyle = (t) => categoryConfig[t] || categoryConfig.other; const setWeather = (k) => { itineraryData.value[currentDay.value].weather = k; weatherMenuOpen.value = false; };
+        return { currentTab, currentDay, totalDays, itineraryData, infoData, exchangeRate, mapFilter, modal, infoModal, rateModal, syncModal, expenseModal, welcomeModal, form, infoForm, expenseForm, weatherMenuOpen, locating, categoryConfig, costTypes, weatherTypes, switchTab, getDateString, addDay, deleteLastDay, safeCurrentItinerary, currentActivities, getCurrentWeather, setWeather, getCardImage, handleImageError, getCategoryStyle, formatMoney, parseMoney, openAddModal, openEditModal, saveItem, deleteItem, addCost, formatCostInput, openInfoModal, saveInfo, removeInfo, autoLocate, autoGenerateDesc, gistConfig, syncStatus, pullFromCloud, pushToCloud, copyID, resetSync, openGuestSetup, totalTripCostHKD, categoryStats, formatTemp, getCostLabel, groupedFlights, allExpenses, openExpenseModal, openEditExpenseModal, saveManualExpense, deleteManualExpense };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
