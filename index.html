@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Iceland Trip - V74 Seamless</title>
+    <title>Iceland Trip - V77 Refined Details</title>
     
     <!-- Libraries -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -60,15 +60,14 @@
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .animate-slide-up { animation: slideUp 0.3s ease-out; }
         
-        /* === V74: SEAMLESS FLIGHT STYLES === */
+        /* === V77 STYLES === */
         
-        /* 1. Straight Line Animation */
         .dashed-line-anim {
             width: 100%;
             height: 2px;
             background-image: linear-gradient(to right, rgba(255,255,255,0.3) 50%, transparent 50%);
             background-position: top;
-            background-size: 8px 2px; /* Dash length */
+            background-size: 8px 2px;
             background-repeat: repeat-x;
             animation: dashMove 1s linear infinite;
         }
@@ -77,53 +76,60 @@
             100% { background-position: 16px 0; }
         }
 
-        /* 2. Floating Notches (Absolutely positioned over the seam) */
-        .ticket-seam-container {
+        .mask-top {
+            --r: 12px;
+            -webkit-mask: 
+                radial-gradient(var(--r) at bottom left, #0000 98%, #000 101%) bottom left,
+                radial-gradient(var(--r) at bottom right, #0000 98%, #000 101%) bottom right,
+                linear-gradient(#000 0 0) top;
+            -webkit-mask-size: 51% 100%;
+            -webkit-mask-repeat: no-repeat;
+            mask: 
+                radial-gradient(var(--r) at bottom left, #0000 98%, #000 101%) bottom left,
+                radial-gradient(var(--r) at bottom right, #0000 98%, #000 101%) bottom right,
+                linear-gradient(#000 0 0) top;
+            mask-size: 51% 100%;
+            mask-repeat: no-repeat;
+        }
+
+        .mask-bottom {
+            --r: 12px;
+            -webkit-mask: 
+                radial-gradient(var(--r) at top left, #0000 98%, #000 101%) top left,
+                radial-gradient(var(--r) at top right, #0000 98%, #000 101%) top right,
+                linear-gradient(#000 0 0) bottom;
+            -webkit-mask-size: 51% 100%;
+            -webkit-mask-repeat: no-repeat;
+            mask: 
+                radial-gradient(var(--r) at top left, #0000 98%, #000 101%) top left,
+                radial-gradient(var(--r) at top right, #0000 98%, #000 101%) top right,
+                linear-gradient(#000 0 0) bottom;
+            mask-size: 51% 100%;
+            mask-repeat: no-repeat;
+        }
+
+        .ticket-filter-shadow { filter: drop-shadow(0 10px 15px rgba(11, 29, 53, 0.25)); }
+
+        .seam-layer {
             position: relative;
-            height: 0; /* Important: Takes no vertical space */
-            z-index: 20;
-        }
-
-        .ticket-notch-l, .ticket-notch-r {
-            position: absolute;
-            top: 0; /* Center on the seam */
-            width: 24px;
-            height: 24px;
-            background-color: #F8FAFC; /* Match BODY background */
-            border-radius: 50%;
-            transform: translateY(-50%);
-            z-index: 30;
-            box-shadow: inset 0 0 4px rgba(0,0,0,0.1); 
-        }
-        .ticket-notch-l { left: -12px; }
-        .ticket-notch-r { right: -12px; }
-
-        /* 3. Horizontal Dotted Line on the seam */
-        .seam-dotted-line {
-            position: absolute;
-            top: 0;
-            left: 12px;
-            right: 12px;
             height: 0;
-            border-top: 2px dashed rgba(50, 130, 184, 0.3);
-            z-index: 25;
+            z-index: 50;
         }
-
-        /* Badge Wrapper to center it perfectly on the seam */
-        .seam-badge-wrapper {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 40;
+        
+        .seam-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: #112442;
+            padding: 0.375rem 1.25rem;
+            border: 1px solid rgba(50, 130, 184, 0.3);
+            border-radius: 9999px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            position: relative;
+            z-index: 50;
         }
 
         .modal-overlay { background-color: rgba(15, 23, 42, 0.6); }
-        
-        /* Shadow for the whole card group */
-        .ticket-shadow {
-            filter: drop-shadow(0 10px 20px rgba(11, 29, 53, 0.2));
-        }
     </style>
 </head>
 <body class="bg-[#F8FAFC]">
@@ -175,27 +181,34 @@
         <div v-show="currentTab !== 'itinerary' && currentTab !== 'map'" class="h-2"></div>
     </div>
 
-    <!-- === TAB 1: FLIGHT (V74 Seamless) === -->
+    <!-- === TAB 1: FLIGHT (V77 Refined) === -->
     <div v-show="currentTab === 'flight'" class="px-6 flex-grow overflow-y-auto pt-4 pb-24">
         <div class="flex justify-between items-center mb-6">
             <h3 class="font-bold text-slate-700 text-sm flex items-center"><i class="fa-solid fa-ticket text-blue-400 mr-2"></i>航班資料</h3>
         </div>
 
-        <div v-for="(group, gIdx) in groupedFlights" :key="gIdx" class="mb-8 ticket-shadow">
+        <div v-for="(group, gIdx) in groupedFlights" :key="gIdx" class="mb-8 relative ticket-filter-shadow">
             <!-- TICKET CONTAINER START -->
-            <div class="flex flex-col">
+            <div class="flex flex-col relative">
                 
-                <!-- 1. TOP SECTION (No bottom radius) -->
-                <div class="bg-card-top text-white p-6 pb-8 relative rounded-t-[1.5rem]">
+                <!-- 1. TOP SECTION (Masked Bottom Corners) -->
+                <div class="bg-card-top text-white p-6 pb-8 relative rounded-t-[1.5rem] mask-top z-10">
                     <!-- Top Header -->
-                    <div class="flex items-center justify-between mb-5">
+                    <div class="flex items-center justify-between mb-4">
                         <span class="bg-[#3282b8] text-white text-[12px] font-bold px-4 py-1 rounded-full shadow-sm">{{ group.type }}</span>
                         <span class="text-[11px] font-bold text-slate-300 font-mono flex items-center gap-2"><i class="fa-regular fa-calendar"></i> {{ group.date }}</span>
                     </div>
                     
-                    <!-- Flight Number -->
+                    <!-- V77: Divider Line -->
+                    <div class="h-px w-full bg-white/10 mb-5"></div>
+                    
+                    <!-- V77: Flight Number with FINNAIR -->
                     <div class="flex justify-center mb-5">
-                        <div class="text-[13px] text-[#3282b8] font-bold bg-white/5 px-8 py-1.5 rounded-lg border border-[#3282b8]/20 tracking-wider shadow-inner">{{ group.f1.code }}</div>
+                        <div class="text-[13px] text-[#3282b8] font-bold bg-white/5 px-5 py-1.5 rounded-lg border border-[#3282b8]/20 tracking-wider shadow-inner flex items-center gap-3">
+                            <span class="text-slate-400 text-[10px] font-medium tracking-wide">FINNAIR</span>
+                            <div class="w-[1px] h-3 bg-white/20"></div>
+                            <span>{{ group.f1.code }}</span>
+                        </div>
                     </div>
 
                     <!-- Straight Line Route -->
@@ -226,30 +239,29 @@
                     </div>
                 </div>
 
-                <!-- 2. THE SEAM (Absolute Positioned Elements) -->
-                <!-- No vertical space occupied here, so Top and Bottom touch perfectly -->
-                <div class="ticket-seam-container">
-                    <!-- Physical Notches -->
-                    <div class="ticket-notch-l"></div>
-                    <div class="ticket-notch-r"></div>
-                    
-                    <!-- Dotted Line overlaying the seam -->
-                    <div class="seam-dotted-line"></div>
-
-                    <!-- Badge Centered on Seam -->
-                    <div class="seam-badge-wrapper">
-                        <div class="bg-[#112442] px-5 py-1.5 border border-[#3282b8]/30 rounded-full shadow-lg flex items-center gap-2">
+                <!-- 2. SEAM LAYER -->
+                <div class="seam-layer">
+                    <div class="absolute top-0 left-0 right-0 flex justify-center items-center" style="transform: translateY(-50%);">
+                         <!-- Dotted Line Background -->
+                         <div class="absolute left-[14px] right-[14px] border-t-2 border-dashed border-[#3282b8]/40 h-0 z-30"></div>
+                         
+                         <!-- The Badge -->
+                         <div class="seam-badge z-40">
                             <i class="fa-solid fa-clock text-[#00b894] text-[10px]"></i>
                             <span class="text-[11px] font-bold text-[#00b894] tracking-wide">轉機 {{ group.layover }}</span>
-                        </div>
+                         </div>
                     </div>
                 </div>
 
-                <!-- 3. BOTTOM SECTION (No top radius) -->
-                <div class="bg-card-bottom text-white p-6 pt-10 pb-8 rounded-b-[1.5rem]">
-                     <!-- Flight Number -->
+                <!-- 3. BOTTOM SECTION (Masked Top Corners) -->
+                <div class="bg-card-bottom text-white p-6 pt-10 pb-8 rounded-b-[1.5rem] mask-bottom z-10 -mt-[1px]">
+                     <!-- V77: Flight Number with FINNAIR -->
                      <div class="flex justify-center mb-5">
-                        <div class="text-[13px] text-[#3282b8] font-bold bg-white/5 px-8 py-1.5 rounded-lg border border-[#3282b8]/20 tracking-wider shadow-inner">{{ group.f2.code }}</div>
+                        <div class="text-[13px] text-[#3282b8] font-bold bg-white/5 px-5 py-1.5 rounded-lg border border-[#3282b8]/20 tracking-wider shadow-inner flex items-center gap-3">
+                            <span class="text-slate-400 text-[10px] font-medium tracking-wide">FINNAIR</span>
+                            <div class="w-[1px] h-3 bg-white/20"></div>
+                            <span>{{ group.f2.code }}</span>
+                        </div>
                     </div>
 
                     <!-- Straight Line Route -->
