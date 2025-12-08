@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Iceland Trip - V88 Copy Fix</title>
+    <title>Iceland Trip - V91 Cloud Sync</title>
     
     <!-- PWA Settings -->
     <link rel="manifest" href="manifest.json">
@@ -61,11 +61,23 @@
 
 <div id="app" class="w-full max-w-md mx-auto min-h-screen flex flex-col relative pb-24" v-cloak>
 
+    <!-- Guest/Sync Mode Banner -->
+    <div v-if="syncStatus.isGuest" class="bg-orange-500 text-white text-[10px] font-bold text-center py-1 sticky top-0 z-[60] shadow-md">
+        <i class="fa-solid fa-eye"></i> 雲端同步 (訪客/唯讀模式)
+    </div>
+    <div v-else-if="gistConfig.id" class="bg-[#3282b8] text-white text-[10px] font-bold text-center py-1 sticky top-0 z-[60] shadow-md flex justify-center items-center gap-2 cursor-pointer" @click="syncModal.open=true">
+        <i class="fa-solid fa-cloud"></i> 雲端同步已啟用 <span v-if="syncStatus.unsaved" class="bg-red-400 px-1.5 rounded-full text-[8px]">未上傳</span>
+    </div>
+
     <!-- 1. HEADER -->
-    <div class="sticky top-0 z-40 header-refined-bg pt-6 px-0 relative pb-0 overflow-hidden">
+    <div class="sticky z-40 header-refined-bg pt-6 px-0 relative pb-0 overflow-hidden" :class="(syncStatus.isGuest || gistConfig.id) ? 'top-6' : 'top-0'">
         <div class="header-glow"></div>
         <div class="flex justify-between items-center mb-2 px-6 relative z-10">
-            <button @click="openShareModal" class="w-10 h-10 rounded-2xl bg-white/80 flex items-center justify-center text-[#3282b8] hover:bg-white transition-all active:scale-95 shadow-sm border border-slate-100"><i class="fa-solid fa-share-nodes"></i></button>
+            <!-- V91: Sync Button replaces Share Button -->
+            <button @click="syncModal.open=true" class="w-10 h-10 rounded-2xl bg-white/80 flex items-center justify-center hover:bg-white transition-all active:scale-95 shadow-sm border border-slate-100" :class="gistConfig.id ? 'text-green-500' : 'text-[#3282b8]'">
+                <i class="fa-solid" :class="gistConfig.id ? 'fa-cloud-arrow-up' : 'fa-cloud-gear'"></i>
+            </button>
+            
             <div class="flex flex-col items-center">
                 <div class="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase mb-1 drop-shadow-sm">Iceland Trip</div>
                 <div class="bg-gradient-to-r from-[#0f4c75] to-[#3282b8] px-4 py-1.5 rounded-full shadow-lg shadow-blue-900/10">
@@ -83,8 +95,8 @@
                     <div class="w-1 h-1 rounded-full my-1.5 transition-all" :class="currentDay === d ? 'bg-[#00b894] w-4' : 'bg-slate-300'"></div>
                     <div class="flex flex-col items-center leading-none gap-0.5"><span class="text-[13px] font-bold font-mono">{{ getDateString(d).date }}</span><span class="text-[10px] font-bold opacity-80 font-mono tracking-wider">{{ getDateString(d).day }}</span></div>
                 </button>
-                <button @click="addDay" class="flex-shrink-0 w-12 h-12 rounded-2xl border-2 border-dashed border-slate-300 text-slate-400 flex items-center justify-center hover:border-[#3282b8] hover:text-[#3282b8] hover:bg-white transition snap-center mb-4"><i class="fa-solid fa-plus text-lg"></i></button>
-                <button @click="deleteLastDay" class="flex-shrink-0 w-12 h-12 rounded-2xl border-2 border-dashed border-red-200 text-red-300 flex items-center justify-center hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition snap-center mr-6 mb-4"><i class="fa-solid fa-trash-can text-lg"></i></button>
+                <button v-if="!syncStatus.isGuest" @click="addDay" class="flex-shrink-0 w-12 h-12 rounded-2xl border-2 border-dashed border-slate-300 text-slate-400 flex items-center justify-center hover:border-[#3282b8] hover:text-[#3282b8] hover:bg-white transition snap-center mb-4"><i class="fa-solid fa-plus text-lg"></i></button>
+                <button v-if="!syncStatus.isGuest" @click="deleteLastDay" class="flex-shrink-0 w-12 h-12 rounded-2xl border-2 border-dashed border-red-200 text-red-300 flex items-center justify-center hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition snap-center mr-6 mb-4"><i class="fa-solid fa-trash-can text-lg"></i></button>
             </div>
         </div>
         <div v-show="currentTab !== 'itinerary' && currentTab !== 'map'" class="h-2"></div>
@@ -122,11 +134,11 @@
     <div v-show="currentTab === 'itinerary'" class="flex-grow flex flex-col">
         <div class="px-6 py-4">
              <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-3 flex-grow"><div class="w-1.5 h-8 rounded-full bg-aurora"></div><input type="text" v-model="safeCurrentItinerary.region" class="font-extrabold text-2xl text-slate-800 bg-transparent border-none outline-none w-full placeholder:text-slate-300 min-w-0" placeholder="輸入地區..."></div>
+                <div class="flex items-center gap-3 flex-grow"><div class="w-1.5 h-8 rounded-full bg-aurora"></div><input type="text" v-model="safeCurrentItinerary.region" class="font-extrabold text-2xl text-slate-800 bg-transparent border-none outline-none w-full placeholder:text-slate-300 min-w-0" placeholder="輸入地區..." :disabled="syncStatus.isGuest"></div>
                 <div class="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-100 shadow-sm flex-shrink-0">
-                    <input type="text" v-model="safeCurrentItinerary.temp" @blur="formatTemp" placeholder="Temp" class="w-12 text-center text-xs font-bold text-slate-600 outline-none bg-transparent placeholder:text-slate-300"><div class="w-[1px] h-4 bg-slate-200"></div>
+                    <input type="text" v-model="safeCurrentItinerary.temp" @blur="formatTemp" placeholder="Temp" class="w-12 text-center text-xs font-bold text-slate-600 outline-none bg-transparent placeholder:text-slate-300" :disabled="syncStatus.isGuest"><div class="w-[1px] h-4 bg-slate-200"></div>
                     <div class="relative">
-                        <button @click="weatherMenuOpen = !weatherMenuOpen" class="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-slate-50 text-slate-600 transition text-xs font-bold"><i class="fa-solid" :class="[getCurrentWeather.icon, getCurrentWeather.color]"></i><span>{{ getCurrentWeather.text }}</span></button>
+                        <button @click="syncStatus.isGuest ? null : weatherMenuOpen = !weatherMenuOpen" class="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-slate-50 text-slate-600 transition text-xs font-bold"><i class="fa-solid" :class="[getCurrentWeather.icon, getCurrentWeather.color]"></i><span>{{ getCurrentWeather.text }}</span></button>
                         <div v-if="weatherMenuOpen" class="absolute top-10 right-0 bg-white shadow-xl rounded-xl p-2 z-50 border w-28 flex flex-col gap-1">
                             <button v-for="(w, key) in weatherTypes" :key="key" @click="setWeather(key)" class="flex items-center gap-2 px-2 py-2 hover:bg-slate-50 rounded text-xs text-left w-full"><i class="fa-solid w-4 text-center" :class="[w.icon, w.color]"></i> {{ w.text }}</button>
                         </div><div v-if="weatherMenuOpen" @click="weatherMenuOpen = false" class="fixed inset-0 z-40"></div>
@@ -143,7 +155,7 @@
                     <div class="bg-white rounded-[1.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 overflow-hidden group hover:shadow-lg transition-shadow relative">
                         <div class="relative border-b border-slate-50">
                              <img :src="getCardImage(item)" class="ratio-16-9" loading="lazy" @error="handleImageError"><div class="absolute inset-0 bg-gradient-to-t from-[#0f4c75]/60 to-transparent opacity-80"></div>
-                             <button @click="openEditModal(item)" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/20 backdrop-blur-none text-white flex items-center justify-center shadow-lg border border-white/30 hover:scale-110 transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                             <button v-if="!syncStatus.isGuest" @click="openEditModal(item)" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/20 backdrop-blur-none text-white flex items-center justify-center shadow-lg border border-white/30 hover:scale-110 transition"><i class="fa-solid fa-pen text-xs"></i></button>
                         </div>
                         <div class="p-5 relative pb-14">
                             <h3 class="font-bold text-slate-800 text-lg leading-tight mb-2">{{ item.title }}</h3><p class="text-xs text-slate-500 line-clamp-2 mb-4 leading-relaxed font-medium">{{ item.desc }}</p>
@@ -156,10 +168,10 @@
                         </div>
                     </div>
                 </div>
-                <div v-if="currentActivities.length === 0" class="flex flex-col items-center justify-center py-10 opacity-40"><div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-300 text-2xl"><i class="fa-solid fa-wind"></i></div><p class="text-xs text-slate-400 font-bold">點擊右下角按鈕新增行程</p></div>
+                <div v-if="currentActivities.length === 0" class="flex flex-col items-center justify-center py-10 opacity-40"><div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3 text-slate-300 text-2xl"><i class="fa-solid fa-wind"></i></div><p class="text-xs text-slate-400 font-bold">暫無行程</p></div>
             </div>
         </div>
-        <button @click="openAddModal" class="fixed bottom-24 right-6 w-14 h-14 bg-aurora text-white rounded-[1.2rem] shadow-xl shadow-blue-500/30 flex items-center justify-center z-30 hover:scale-105 transition"><i class="fa-solid fa-plus text-xl"></i></button>
+        <button v-if="!syncStatus.isGuest" @click="openAddModal" class="fixed bottom-24 right-6 w-14 h-14 bg-aurora text-white rounded-[1.2rem] shadow-xl shadow-blue-500/30 flex items-center justify-center z-30 hover:scale-105 transition"><i class="fa-solid fa-plus text-xl"></i></button>
     </div>
 
     <!-- === TAB 3: MAP === -->
@@ -171,10 +183,10 @@
     <!-- === TAB 4: HOTEL === -->
     <div v-show="currentTab === 'hotel'" class="px-6 flex-grow overflow-y-auto pt-4">
         <div class="mb-6">
-            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-bed text-indigo-400 mr-2"></i>住宿資料</h3><button @click="openInfoModal('hotel')" class="text-[10px] bg-indigo-50 text-indigo-500 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-100"><i class="fa-solid fa-plus"></i> 新增</button></div>
+            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-bed text-indigo-400 mr-2"></i>住宿資料</h3><button v-if="!syncStatus.isGuest" @click="openInfoModal('hotel')" class="text-[10px] bg-indigo-50 text-indigo-500 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-100"><i class="fa-solid fa-plus"></i> 新增</button></div>
             <div v-if="infoData.hotels.length === 0" class="text-xs text-slate-400 text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200"><i class="fa-solid fa-hotel text-2xl mb-2 opacity-50"></i><br>暫無住宿資料</div>
             <div v-for="(h, idx) in infoData.hotels" :key="idx" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-3 relative group hover:shadow-md transition">
-                <button @click="removeInfo('hotels', idx)" class="absolute top-3 right-3 text-slate-200 hover:text-red-400 transition"><i class="fa-solid fa-xmark"></i></button>
+                <button v-if="!syncStatus.isGuest" @click="removeInfo('hotels', idx)" class="absolute top-3 right-3 text-slate-200 hover:text-red-400 transition"><i class="fa-solid fa-xmark"></i></button>
                 <div class="flex gap-3 mb-3"><div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 flex-shrink-0"><i class="fa-solid fa-bed"></i></div><div class="font-bold text-slate-800 text-base leading-tight pt-1">{{ h.name }}</div></div>
                 <div class="flex justify-between items-center"><div class="text-xs text-slate-500"><i class="fa-solid fa-calendar-check mr-1.5 text-indigo-300"></i> {{ h.dates }}</div><a v-if="h.link" :href="h.link" target="_blank" class="text-[10px] text-white bg-indigo-400 px-2 py-1 rounded hover:bg-indigo-500 transition font-bold"><i class="fa-solid fa-link"></i> 訂單</a></div>
             </div>
@@ -189,7 +201,7 @@
                     <div class="text-[9px] font-bold opacity-70 uppercase tracking-widest mb-1">總預估花費</div>
                     <div class="flex items-baseline gap-1"><span class="text-3xl font-bold font-mono tracking-tight">{{ formatMoney(totalTripCostHKD) }}</span><span class="text-sm font-bold opacity-60">HK$</span></div>
                 </div>
-                <div @click="rateModal.open=true" class="text-right cursor-pointer bg-white/10 px-3 py-2 rounded-xl hover:bg-white/20 transition"><div class="text-[10px] opacity-60">匯率設定 <i class="fa-solid fa-pen ml-1"></i></div><div class="text-xs font-bold font-mono">1 ISK ≈ {{ exchangeRate }}</div></div>
+                <div @click="!syncStatus.isGuest && (rateModal.open=true)" class="text-right cursor-pointer bg-white/10 px-3 py-2 rounded-xl hover:bg-white/20 transition"><div class="text-[10px] opacity-60">匯率設定 <i v-if="!syncStatus.isGuest" class="fa-solid fa-pen ml-1"></i></div><div class="text-xs font-bold font-mono">1 ISK ≈ {{ exchangeRate }}</div></div>
             </div>
         </div>
         <h3 class="font-bold text-slate-700 mb-3 text-sm px-1">分類消費統計 <span class="text-[10px] text-slate-400 font-normal ml-1">(約 HK$)</span></h3>
@@ -199,8 +211,8 @@
         </div>
         <div class="flex justify-between items-end mb-4 px-1"><h3 class="font-bold text-slate-700 text-sm">消費明細</h3><span class="text-[10px] text-slate-400">{{ allExpenses.length }} 筆記錄</span></div>
         <div v-if="allExpenses.length === 0" class="text-center py-8 opacity-40"><div class="text-4xl mb-2 text-slate-300">🧾</div><p class="text-xs text-slate-400">尚無消費記錄</p></div>
-        <div v-for="(exp, idx) in allExpenses" :key="idx" class="expense-item"><div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 text-lg flex-shrink-0" :class="costTypes[exp.type]?.bg || 'bg-slate-100 text-slate-400'"><i class="fa-solid" :class="costTypes[exp.type]?.icon || 'fa-tag'"></i></div><div class="flex-grow min-w-0"><div class="text-xs font-bold text-slate-700 truncate">{{ exp.title }}</div><div class="text-[10px] text-slate-400 font-mono">Day {{ exp.day }} ({{ getDateString(exp.day).date }})</div></div><div class="text-right flex-shrink-0 mr-2"><div class="text-xs font-bold font-mono text-slate-800">{{ exp.currency }} {{ formatMoney(exp.amount) }}</div><div class="text-[9px] text-slate-400" v-if="exp.currency !== 'HK$'">≈ HK$ {{ formatMoney(Math.round(parseMoney(exp.amount) * exchangeRate)) }}</div></div><div v-if="exp.isManual" class="flex items-center gap-1 border-l pl-2 ml-1 border-slate-100"><button @click="openEditExpenseModal(exp)" class="text-slate-300 hover:text-blue-500 w-6 h-6 flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button><button @click="deleteManualExpense(exp.day, exp.id)" class="text-slate-300 hover:text-red-400 w-6 h-6 flex items-center justify-center"><i class="fa-solid fa-trash-can text-xs"></i></button></div></div>
-        <button @click="openExpenseModal" class="fixed bottom-24 right-6 bg-[#3282b8] text-white px-5 py-3 rounded-xl shadow-xl font-bold text-xs flex items-center gap-2 active:scale-95 transition z-30"><i class="fa-solid fa-plus"></i> 記一筆</button>
+        <div v-for="(exp, idx) in allExpenses" :key="idx" class="expense-item"><div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 text-lg flex-shrink-0" :class="costTypes[exp.type]?.bg || 'bg-slate-100 text-slate-400'"><i class="fa-solid" :class="costTypes[exp.type]?.icon || 'fa-tag'"></i></div><div class="flex-grow min-w-0"><div class="text-xs font-bold text-slate-700 truncate">{{ exp.title }}</div><div class="text-[10px] text-slate-400 font-mono">Day {{ exp.day }} ({{ getDateString(exp.day).date }})</div></div><div class="text-right flex-shrink-0 mr-2"><div class="text-xs font-bold font-mono text-slate-800">{{ exp.currency }} {{ formatMoney(exp.amount) }}</div><div class="text-[9px] text-slate-400" v-if="exp.currency !== 'HK$'">≈ HK$ {{ formatMoney(Math.round(parseMoney(exp.amount) * exchangeRate)) }}</div></div><div v-if="exp.isManual && !syncStatus.isGuest" class="flex items-center gap-1 border-l pl-2 ml-1 border-slate-100"><button @click="openEditExpenseModal(exp)" class="text-slate-300 hover:text-blue-500 w-6 h-6 flex items-center justify-center"><i class="solid fa-pen text-xs"></i></button><button @click="deleteManualExpense(exp.day, exp.id)" class="text-slate-300 hover:text-red-400 w-6 h-6 flex items-center justify-center"><i class="fa-solid fa-trash-can text-xs"></i></button></div></div>
+        <button v-if="!syncStatus.isGuest" @click="openExpenseModal" class="fixed bottom-24 right-6 bg-[#3282b8] text-white px-5 py-3 rounded-xl shadow-xl font-bold text-xs flex items-center gap-2 active:scale-95 transition z-30"><i class="fa-solid fa-plus"></i> 記一筆</button>
     </div>
 
     <!-- === TAB 6: INFO (V85 NEW) === -->
@@ -227,22 +239,56 @@
     <!-- MODAL: RATE -->
     <div v-if="rateModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6"><div class="absolute inset-0 modal-overlay" @click="rateModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl animate-slide-up"><h3 class="font-bold text-xl text-slate-800 mb-6">設定匯率</h3><div class="relative mb-8"><input type="number" v-model="exchangeRate" class="text-4xl text-center border-b-2 border-slate-100 w-full pb-2 font-mono text-slate-700 focus:outline-none focus:border-blue-400" step="0.001"><div class="text-xs text-slate-400 mt-2">1 ISK = HKD</div></div><button @click="rateModal.open=false" class="w-full py-3.5 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">確認設定</button></div></div>
     
-    <!-- MODAL: SHARE (V88 Updated) -->
-    <div v-if="shareModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6">
-        <div class="absolute inset-0 modal-overlay" @click="shareModal.open=false"></div>
-        <div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center space-y-4 animate-slide-up">
-            <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto text-2xl mb-2"><i class="fa-solid fa-share-nodes"></i></div>
-            <h3 class="font-bold text-xl text-slate-800">行程分享</h3>
-            <p class="text-xs text-slate-400 px-4">複製下方代碼儲存或傳送給朋友。若按鈕無效，請直接長按下方代碼框複製。</p>
+    <!-- MODAL: SYNC (V91 NEW) -->
+    <div v-if="syncModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6">
+        <div class="absolute inset-0 modal-overlay" @click="syncModal.open=false"></div>
+        <div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center space-y-4 animate-slide-up max-h-[85vh] overflow-y-auto">
+            <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto text-2xl mb-2"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+            <h3 class="font-bold text-xl text-slate-800">GitHub 雲端同步</h3>
             
-            <!-- V88: Synchronous Copy Button -->
-            <button @click="doCopy" class="w-full py-3.5 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition">
-                <i class="fa-regular fa-copy mr-2"></i> 複製代碼
-            </button>
+            <div v-if="syncStatus.isGuest">
+                 <div class="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-4">
+                     <p class="text-xs text-orange-600 font-bold mb-2">您目前是「訪客模式」</p>
+                     <p class="text-[10px] text-slate-500">您可以檢視所有行程和最新花費，但無法修改。</p>
+                 </div>
+                 <button @click="pullFromCloud" class="w-full py-3 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg active:scale-95 transition text-xs mb-2">
+                    <i class="fa-solid fa-rotate mr-2"></i> 重新整理 (下載最新資料)
+                 </button>
+            </div>
             
-            <div class="relative py-2"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-100"></div></div><div class="relative"><span class="bg-white px-2 text-xs text-slate-400">代碼區域</span></div></div>
-            <textarea id="shareTextarea" v-model="shareModal.importData" class="w-full border p-3 rounded-xl text-xs bg-slate-50 focus:bg-white transition resize-none font-mono text-slate-600 break-all" rows="5" placeholder="代碼將顯示於此..."></textarea>
-            <div class="flex gap-3"><button @click="shareModal.open=false" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-500">關閉</button><button @click="importData" class="flex-1 py-3 bg-slate-800 text-white rounded-xl font-bold">匯入</button></div>
+            <div v-else>
+                <!-- Config Section -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 text-left">
+                     <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">同步設定 (僅需填寫一次)</div>
+                     <input v-model="gistConfig.id" class="modal-input text-xs mb-2" placeholder="Gist ID (必填)">
+                     <input v-model="gistConfig.token" class="modal-input text-xs" type="password" placeholder="GitHub Token (主揪必填)">
+                     <div class="text-[9px] text-slate-400 mt-2 leading-relaxed">
+                        1. 申請 GitHub 帳號並前往 <a href="https://github.com/settings/tokens" target="_blank" class="text-blue-500 underline">Tokens</a> 頁面。<br>
+                        2. 產生 Token (勾選 gist 權限)。<br>
+                        3. 前往 <a href="https://gist.github.com" target="_blank" class="text-blue-500 underline">Gist</a> 建立一個名為 <b>iceland.json</b> 的檔案(內容隨意)。<br>
+                        4. 網址最後一串亂碼即為 ID。
+                     </div>
+                </div>
+
+                <div class="flex gap-2 mb-2">
+                     <button @click="pullFromCloud" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold active:scale-95 transition text-xs">
+                        <i class="fa-solid fa-cloud-arrow-down mr-2"></i> 下載雲端
+                     </button>
+                     <button @click="pushToCloud" class="flex-1 py-3 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition text-xs">
+                        <i class="fa-solid fa-cloud-arrow-up mr-2"></i> 上傳同步
+                     </button>
+                </div>
+                
+                <!-- Share Link Generator -->
+                <div v-if="gistConfig.id" class="mt-6 border-t pt-4">
+                     <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">分享給朋友 (唯讀連結)</div>
+                     <button @click="copyGuestLink" class="w-full py-3 bg-green-500 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 active:scale-95 transition text-xs">
+                        <i class="fa-solid fa-link mr-2"></i> 複製同步連結
+                     </button>
+                </div>
+            </div>
+
+            <button @click="syncModal.open=false" class="w-full py-3 bg-slate-100 rounded-xl font-bold text-slate-500 mt-2">關閉</button>
         </div>
     </div>
 
@@ -291,20 +337,102 @@ createApp({
         const currentTab = ref('flight'); const currentDay = ref(1); const totalDays = ref(15);
         const itineraryData = ref({}); const infoData = ref({ hotels: [] }); const exchangeRate = ref(0.056);
         const mapFilter = ref('day'); const weatherMenuOpen = ref(false); const locating = ref(false);
-        const modal = reactive({ open: false, mode: 'add' }); const infoModal = reactive({ open: false, type: 'hotel' }); const rateModal = reactive({ open: false }); const shareModal = reactive({ open: false, importData: '' });
+        const modal = reactive({ open: false, mode: 'add' }); const infoModal = reactive({ open: false, type: 'hotel' }); const rateModal = reactive({ open: false }); 
         const expenseModal = reactive({ open: false, mode: 'add' }); 
+        
+        // V91: Gist Sync State
+        const syncModal = reactive({ open: false });
+        const gistConfig = reactive({ id: '', token: '' });
+        const syncStatus = reactive({ isGuest: false, unsaved: false });
+
         const form = reactive({ id: null, time: '', endTime: '', type: 'camera', title: '', distance: '', location: '', lat: null, lng: null, mapUrl: '', imgUrl: '', costs: [], desc: '' });
         const infoForm = reactive({ name: '', dates: '', link: '' });
         const expenseForm = reactive({ id: null, originalDay: 1, day: 1, type: 'food', title: '', currency: 'ISK', amount: '' });
         let mapInstance = null; let markers = []; let routeLine = null; const startDate = new Date('2026-03-22'); const daysOfWeek = ['(日)', '(一)', '(二)', '(三)', '(四)', '(五)', '(六)'];
 
+        const getQueryParam = (name) => { const urlParams = new URLSearchParams(window.location.search); return urlParams.get(name); };
+
         const init = () => {
+            // Load Local Config
+            const savedGist = localStorage.getItem('iceland_gist_config');
+            if(savedGist) Object.assign(gistConfig, JSON.parse(savedGist));
+
+            // Check URL for Guest Mode
+            const urlGistId = getQueryParam('gist');
+            if(urlGistId) {
+                gistConfig.id = urlGistId;
+                syncStatus.isGuest = true;
+                // Auto pull for guests
+                pullFromCloud();
+                return;
+            }
+
+            // Normal Load
             const d = localStorage.getItem('iceland_v80_data') || localStorage.getItem('iceland_v71_data'); let data = d ? JSON.parse(d) : {};
             const dayKeys = Object.keys(data).map(Number); totalDays.value = Math.max(dayKeys.length > 0 ? Math.max(...dayKeys) : 15, 15);
             for(let k=1; k<=totalDays.value; k++) { if(!data[k]) data[k] = { date: `DAY ${k}`, region: "", weather: "sunny", temp: "", activities: [], manualExpenses: [] }; else if(!data[k].manualExpenses) data[k].manualExpenses = []; if(!data[k].activities) data[k].activities = []; data[k].activities.forEach(a => { if(!a.costs) a.costs = []; a.costs.forEach(c => { if(!c.currency) c.currency = 'ISK'; }); }); }
             itineraryData.value = data; const i = localStorage.getItem('iceland_v80_info') || localStorage.getItem('iceland_v71_info'); infoData.value = i ? JSON.parse(i) : { hotels: [] }; const r = localStorage.getItem('iceland_rate'); if(r) exchangeRate.value = parseFloat(r);
         }; init();
-        watch([itineraryData, infoData, exchangeRate, totalDays], () => { localStorage.setItem('iceland_v80_data', JSON.stringify(itineraryData.value)); localStorage.setItem('iceland_v80_info', JSON.stringify(infoData.value)); localStorage.setItem('iceland_rate', exchangeRate.value); }, { deep: true });
+        
+        watch([itineraryData, infoData, exchangeRate, totalDays], () => { 
+            if(!syncStatus.isGuest) {
+                localStorage.setItem('iceland_v80_data', JSON.stringify(itineraryData.value)); 
+                localStorage.setItem('iceland_v80_info', JSON.stringify(infoData.value)); 
+                localStorage.setItem('iceland_rate', exchangeRate.value);
+                syncStatus.unsaved = true; // Mark as needs sync
+            }
+        }, { deep: true });
+
+        watch(gistConfig, () => { localStorage.setItem('iceland_gist_config', JSON.stringify(gistConfig)); }, { deep: true });
+
+        // === V91 Sync Logic ===
+        const pullFromCloud = async () => {
+            if(!gistConfig.id) return alert("請輸入 Gist ID");
+            try {
+                // Fetch from Gist API (public read is free)
+                const res = await fetch(`https://api.github.com/gists/${gistConfig.id}`);
+                if(!res.ok) throw new Error("Gist Not Found");
+                const gist = await res.json();
+                const file = gist.files['iceland.json'];
+                if(!file) throw new Error("File iceland.json not found in Gist");
+                
+                const p = JSON.parse(file.content);
+                if(p.data) {
+                    itineraryData.value = p.data;
+                    if(p.info) infoData.value = p.info;
+                    if(p.rate) exchangeRate.value = p.rate;
+                    const days = Object.keys(p.data).map(Number);
+                    totalDays.value = days.length ? Math.max(...days, 15) : 15;
+                    syncStatus.unsaved = false;
+                    alert("☁️ 下載成功！資料已同步。");
+                    syncModal.open = false;
+                }
+            } catch(e) { alert("同步失敗: " + e.message); }
+        };
+
+        const pushToCloud = async () => {
+            if(!gistConfig.id || !gistConfig.token) return alert("請輸入 ID 和 Token");
+            try {
+                const content = JSON.stringify({ data: itineraryData.value, info: infoData.value, rate: exchangeRate.value }, null, 2);
+                const res = await fetch(`https://api.github.com/gists/${gistConfig.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `token ${gistConfig.token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ files: { 'iceland.json': { content: content } } })
+                });
+                if(!res.ok) throw new Error("Update Failed");
+                syncStatus.unsaved = false;
+                alert("✅ 上傳成功！朋友現在可以看到最新行程了。");
+                syncModal.open = false;
+            } catch(e) { alert("上傳失敗: " + e.message + "\n請檢查 Token 是否正確。"); }
+        };
+
+        const copyGuestLink = async () => {
+            const baseUrl = window.location.href.split('?')[0];
+            const url = `${baseUrl}?gist=${gistConfig.id}`;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(url); alert("✅ 連結已複製！");
+            } else { prompt("複製連結:", url); }
+        };
 
         const safeCurrentItinerary = computed(() => { if(!itineraryData.value[currentDay.value]) itineraryData.value[currentDay.value] = { date: `DAY ${currentDay.value}`, region: "", weather: "sunny", temp: "", activities: [], manualExpenses: [] }; return itineraryData.value[currentDay.value]; });
         const currentActivities = computed(() => (safeCurrentItinerary.value.activities || []).sort((a, b) => a.time.localeCompare(b.time)));
@@ -361,38 +489,8 @@ createApp({
         const autoLocate = async () => { if(!form.location) return alert("請輸入地點"); locating.value = true; try { const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(form.location + " Iceland") + '&limit=1'); const data = await res.json(); if(data.length) { form.lat = parseFloat(data[0].lat); form.lng = parseFloat(data[0].lon); form.mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(form.location); } else alert("找不到地點"); } catch(e) { alert("定位錯誤"); } locating.value = false; }; 
         const autoGenerateDesc = () => { const t = form.title || ''; if(t.includes('瀑布')) form.desc = '壯觀瀑布，注意防水。'; else if(t.includes('超市')) form.desc = '補給時間，Bonus 最平。'; else form.desc = '前往 ' + t + ' 探索美景。'; };
         
-        // V88 Fix: Separate Open & Generate from Copy
-        const openShareModal = () => {
-            // 1. Generate Data IMMEDIATELY when opening
-            try {
-                const cleanData = JSON.parse(JSON.stringify({ data: itineraryData.value, info: infoData.value, rate: exchangeRate.value }));
-                shareModal.importData = JSON.stringify(cleanData);
-            } catch(e) { shareModal.importData = ""; }
-            shareModal.open = true;
-        };
-
-        const doCopy = async () => {
-            const text = shareModal.importData;
-            // 2. Synchronous/Direct Copy
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                try { await navigator.clipboard.writeText(text); alert("✅ 代碼已複製！"); return; } catch (err) { console.log("Clipboard API failed"); }
-            }
-            // Fallback for older/strict browsers
-            const textarea = document.getElementById('shareTextarea');
-            if(textarea) {
-                textarea.focus();
-                textarea.select();
-                textarea.setSelectionRange(0, 99999);
-                try {
-                    const successful = document.execCommand('copy');
-                    if(successful) alert("✅ 代碼已複製！"); else throw new Error("Copy failed");
-                } catch (e) { alert("⚠️ 請手動複製下方代碼"); }
-            }
-        }; 
-        
-        const importData = () => { try { const p = JSON.parse(shareModal.importData); if(p.data) { itineraryData.value = p.data; if(p.info) infoData.value = p.info; if(p.rate) exchangeRate.value = p.rate; const days = Object.keys(p.data).map(Number); totalDays.value = days.length ? Math.max(...days, 15) : 15; alert("匯入成功"); shareModal.open = false; } } catch(e) { alert("代碼錯誤"); } };
         const getCardImage = (item) => item.imgUrl || 'https://image.pollinations.ai/prompt/' + encodeURIComponent((item.title||'Iceland')+' travel') + '?width=400&height=225&nologo=true'; const handleImageError = (e) => e.target.src = 'https://picsum.photos/seed/' + Math.random() + '/400/225?grayscale'; const getCategoryStyle = (t) => categoryConfig[t] || categoryConfig.other; const setWeather = (k) => { itineraryData.value[currentDay.value].weather = k; weatherMenuOpen.value = false; };
-        return { currentTab, currentDay, totalDays, itineraryData, infoData, exchangeRate, mapFilter, modal, infoModal, rateModal, shareModal, expenseModal, form, infoForm, expenseForm, weatherMenuOpen, locating, categoryConfig, costTypes, weatherTypes, switchTab, getDateString, addDay, deleteLastDay, safeCurrentItinerary, currentActivities, getCurrentWeather, setWeather, getCardImage, handleImageError, getCategoryStyle, formatMoney, parseMoney, openAddModal, openEditModal, saveItem, deleteItem, addCost, formatCostInput, openInfoModal, saveInfo, removeInfo, autoLocate, autoGenerateDesc, openShareModal, doCopy, importData, totalTripCostHKD, categoryStats, formatTemp, getCostLabel, groupedFlights, allExpenses, openExpenseModal, openEditExpenseModal, saveManualExpense, deleteManualExpense };
+        return { currentTab, currentDay, totalDays, itineraryData, infoData, exchangeRate, mapFilter, modal, infoModal, rateModal, syncModal, expenseModal, form, infoForm, expenseForm, weatherMenuOpen, locating, categoryConfig, costTypes, weatherTypes, switchTab, getDateString, addDay, deleteLastDay, safeCurrentItinerary, currentActivities, getCurrentWeather, setWeather, getCardImage, handleImageError, getCategoryStyle, formatMoney, parseMoney, openAddModal, openEditModal, saveItem, deleteItem, addCost, formatCostInput, openInfoModal, saveInfo, removeInfo, autoLocate, autoGenerateDesc, gistConfig, syncStatus, pullFromCloud, pushToCloud, copyGuestLink, totalTripCostHKD, categoryStats, formatTemp, getCostLabel, groupedFlights, allExpenses, openExpenseModal, openEditExpenseModal, saveManualExpense, deleteManualExpense };
     }
 }).mount('#app');
 </script>
