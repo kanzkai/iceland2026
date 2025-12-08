@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Iceland Trip - V93 Safe Mode</title>
+    <title>Iceland Trip - V94 UI Fix</title>
     
-    <!-- 1. Crash Reporter (最優先載入) -->
+    <!-- 1. Crash Reporter -->
     <script>
         window.onerror = function(msg, url, line, col, error) {
-            var extra = error ? "\nStack: " + error.stack : "";
-            alert("⚠️ 程式發生錯誤:\n" + msg + "\n行數: " + line + extra);
-            // 嘗試移除遮罩讓使用者看到介面
             var loader = document.getElementById('app-loader');
             if(loader) loader.style.display = 'none';
         };
@@ -34,8 +31,6 @@
 
     <style>
         body { font-family: 'Montserrat', 'Noto Sans TC', system-ui, sans-serif; background-color: #F8FAFC; color: #334155; margin: 0; padding: 0; }
-        /* 移除 v-cloak 避免完全白屏，改用 loader 遮擋 */
-        /* [v-cloak] { display: none !important; } */
         
         #app-loader { position: fixed; inset: 0; background: #0f4c75; z-index: 9999; display: flex; flex-col; align-items: center; justify-content: center; color: white; transition: opacity 0.5s; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -43,7 +38,7 @@
         #map-full { height: calc(100vh - 240px); width: 100%; border-radius: 1rem; z-index: 1; }
         .header-refined-bg {
             background-color: #F8FAFC; background-image: linear-gradient(to bottom, #ffffff 0%, #F1F5F9 100%);
-            border-bottom: 1px solid #e2e8f0; box-shadow: 0 10px 30px -10px rgba(15, 76, 117, 0.1); z-index: 50; position: relative;
+            border-bottom: 1px solid #e2e8f0; box-shadow: 0 10px 30px -10px rgba(15, 76, 117, 0.1); z-index: 50; position: relative; transition: top 0.3s ease-out;
         }
         .header-glow { position: absolute; top: -20%; right: -10%; width: 70%; height: 100%; background: radial-gradient(circle, rgba(50, 130, 184, 0.08) 0%, transparent 70%); pointer-events: none; z-index: 0; }
         .fade-mask-left { position: absolute; left: 0; top: 0; bottom: 0; width: 24px; background: linear-gradient(to right, #F8FAFC 20%, transparent); z-index: 20; pointer-events: none; }
@@ -69,6 +64,14 @@
         .expense-item { display: flex; align-items: center; padding: 12px; background: white; border-radius: 12px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
         .info-card { background: white; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .kp-badge { display: inline-flex; width: 1.5rem; height: 1.5rem; align-items: center; justify-content: center; border-radius: 9999px; font-weight: bold; font-size: 0.7rem; color: white; margin-right: 0.5rem; }
+        
+        /* Day Selector Active State Fix - Ensuring blue background */
+        .day-btn-active { background-color: #0f4c75 !important; border-color: #0f4c75 !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(15, 76, 117, 0.4) !important; }
+        .day-btn-active .dot { background-color: #00b894 !important; width: 16px !important; }
+        
+        /* Notification Banner Animation */
+        .banner-slide-enter-active, .banner-slide-leave-active { transition: transform 0.3s ease-out; }
+        .banner-slide-enter-from, .banner-slide-leave-to { transform: translateY(-100%); }
     </style>
 </head>
 <body class="bg-[#F8FAFC]">
@@ -77,27 +80,32 @@
 <div id="app-loader">
     <div class="text-3xl mb-4"><i class="fa-solid fa-spinner fa-spin"></i></div>
     <div class="font-bold">正在載入行程...</div>
-    <div class="text-xs opacity-70 mt-2">V93 System Check</div>
-    <button onclick="localStorage.clear(); location.reload();" class="mt-8 px-4 py-2 bg-red-500 rounded text-xs font-bold text-white border border-red-400">重置 App (如果卡住請按此)</button>
+    <div class="text-xs opacity-70 mt-2">V94 UI Fix</div>
+    <button onclick="localStorage.clear(); location.reload();" class="mt-8 px-4 py-2 bg-red-500 rounded text-xs font-bold text-white border border-red-400">重置 App</button>
 </div>
 
 <div id="app" class="w-full max-w-md mx-auto min-h-screen flex flex-col relative pb-24" style="display: none;">
 
-    <!-- Guest/Sync Mode Banner -->
-    <div v-if="syncStatus.isGuest" class="bg-orange-500 text-white text-[10px] font-bold text-center py-1 sticky top-0 z-[60] shadow-md">
-        <i class="fa-solid fa-eye"></i> 雲端同步 (訪客/唯讀模式)
-    </div>
-    <div v-else-if="gistConfig.id" class="bg-[#3282b8] text-white text-[10px] font-bold text-center py-1 sticky top-0 z-[60] shadow-md flex justify-center items-center gap-2 cursor-pointer" @click="syncModal.open=true">
-        <i class="fa-solid fa-cloud"></i> 雲端同步已啟用 <span v-if="syncStatus.unsaved" class="bg-red-400 px-1.5 rounded-full text-[8px]">未上傳</span>
-    </div>
+    <!-- Top Banner (Show briefly) -->
+    <transition name="banner-slide">
+        <div v-if="showBanner && (syncStatus.isGuest || gistConfig.id)" 
+             class="text-[10px] font-bold text-center py-1 sticky top-0 z-[60] shadow-md flex justify-center items-center gap-2 cursor-pointer"
+             :class="syncStatus.isGuest ? 'bg-orange-500 text-white' : 'bg-[#3282b8] text-white'"
+             @click="syncModal.open=true">
+            <i class="fa-solid" :class="syncStatus.isGuest ? 'fa-eye' : 'fa-cloud'"></i> 
+            {{ syncStatus.isGuest ? '雲端同步 (訪客模式)' : '雲端同步已啟用' }} 
+            <span v-if="syncStatus.unsaved && !syncStatus.isGuest" class="bg-red-400 px-1.5 rounded-full text-[8px]">未上傳</span>
+        </div>
+    </transition>
 
     <!-- 1. HEADER -->
-    <div class="sticky z-40 header-refined-bg pt-6 px-0 relative pb-0 overflow-hidden" :class="(syncStatus.isGuest || gistConfig.id) ? 'top-6' : 'top-0'">
+    <div class="sticky z-40 header-refined-bg pt-6 px-0 relative pb-0 overflow-hidden" :class="(showBanner && (syncStatus.isGuest || gistConfig.id)) ? 'top-0' : '-top-6'">
         <div class="header-glow"></div>
-        <div class="flex justify-between items-center mb-2 px-6 relative z-10">
-            <!-- V91: Sync Button replaces Share Button -->
-            <button @click="syncModal.open=true" class="w-10 h-10 rounded-2xl bg-white/80 flex items-center justify-center hover:bg-white transition-all active:scale-95 shadow-sm border border-slate-100" :class="gistConfig.id ? 'text-green-500' : 'text-[#3282b8]'">
+        <div class="flex justify-between items-center mb-2 px-6 relative z-10 pt-2">
+            <!-- V94: Sync Button Color Fixed (Blue) -->
+            <button @click="syncModal.open=true" class="w-10 h-10 rounded-2xl bg-white/80 flex items-center justify-center hover:bg-white transition-all active:scale-95 shadow-sm border border-slate-100 relative" :class="syncStatus.unsaved ? 'text-red-500' : 'text-[#3282b8]'">
                 <i class="fa-solid" :class="gistConfig.id ? 'fa-cloud-arrow-up' : 'fa-cloud-gear'"></i>
+                <div v-if="syncStatus.unsaved" class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
             </button>
             
             <div class="flex flex-col items-center">
@@ -112,9 +120,11 @@
         <div v-show="currentTab === 'itinerary' || currentTab === 'map'" class="relative z-10 animate-slide-up">
             <div class="fade-mask-left"></div><div class="fade-mask-right"></div>
             <div class="flex overflow-x-auto gap-3 pl-6 pr-6 pt-2 pb-0 no-scrollbar snap-x cursor-grab active:cursor-grabbing items-center relative z-10">
-                <button v-for="d in totalDays" :key="d" @click="currentDay = d" class="flex flex-col items-center justify-center transition-all duration-200 flex-shrink-0 w-[68px] py-3 rounded-2xl border snap-center group relative mb-4 bg-white shadow-sm" :class="currentDay === d ? 'bg-[#0f4c75] !text-white !border-[#0f4c75] shadow-xl shadow-blue-900/40 ring-1 ring-[#0f4c75]/20' : 'text-slate-400 border-slate-100 hover:bg-white hover:border-slate-200 hover:shadow-md'">
+                <button v-for="d in totalDays" :key="d" @click="currentDay = d" 
+                        class="flex flex-col items-center justify-center transition-all duration-200 flex-shrink-0 w-[68px] py-3 rounded-2xl border snap-center group relative mb-4 shadow-sm"
+                        :class="currentDay === d ? 'day-btn-active' : 'bg-white text-slate-400 border-slate-100 hover:bg-white hover:border-slate-200 hover:shadow-md'">
                     <span class="text-[9px] font-bold uppercase tracking-wider opacity-70">Day {{ d }}</span>
-                    <div class="w-1 h-1 rounded-full my-1.5 transition-all" :class="currentDay === d ? 'bg-[#00b894] w-4' : 'bg-slate-300'"></div>
+                    <div class="w-1 h-1 rounded-full my-1.5 transition-all dot" :class="currentDay === d ? 'bg-[#00b894]' : 'bg-slate-300'"></div>
                     <div class="flex flex-col items-center leading-none gap-0.5"><span class="text-[13px] font-bold font-mono">{{ getDateString(d).date }}</span><span class="text-[10px] font-bold opacity-80 font-mono tracking-wider">{{ getDateString(d).day }}</span></div>
                 </button>
                 <button v-if="!syncStatus.isGuest" @click="addDay" class="flex-shrink-0 w-12 h-12 rounded-2xl border-2 border-dashed border-slate-300 text-slate-400 flex items-center justify-center hover:border-[#3282b8] hover:text-[#3282b8] hover:bg-white transition snap-center mb-4"><i class="fa-solid fa-plus text-lg"></i></button>
@@ -387,6 +397,7 @@ createApp({
         const syncModal = reactive({ open: false });
         const gistConfig = reactive({ id: '', token: '' });
         const syncStatus = reactive({ isGuest: false, unsaved: false });
+        const showBanner = ref(true); // V94: Control banner visibility
 
         const form = reactive({ id: null, time: '', endTime: '', type: 'camera', title: '', distance: '', location: '', lat: null, lng: null, mapUrl: '', imgUrl: '', costs: [], desc: '' });
         const infoForm = reactive({ name: '', dates: '', link: '' });
@@ -395,17 +406,15 @@ createApp({
 
         const init = () => {
             try {
-                // Safe JSON parse for config
                 const savedGist = localStorage.getItem('iceland_gist_config');
                 if(savedGist) {
                     try { Object.assign(gistConfig, JSON.parse(savedGist)); } catch(e) { console.error("Gist config corrupt"); }
                 }
                 if(gistConfig.id && !gistConfig.token) syncStatus.isGuest = true;
 
-                // Safe JSON parse for data
                 const d = localStorage.getItem('iceland_v80_data') || localStorage.getItem('iceland_v71_data'); 
                 let data = {};
-                try { data = d ? JSON.parse(d) : {}; } catch(e) { console.error("Data corrupt"); alert("本地資料損毀，將重置"); }
+                try { data = d ? JSON.parse(d) : {}; } catch(e) { console.error("Data corrupt"); }
                 
                 const dayKeys = Object.keys(data).map(Number); totalDays.value = Math.max(dayKeys.length > 0 ? Math.max(...dayKeys) : 15, 15);
                 for(let k=1; k<=totalDays.value; k++) { 
@@ -413,7 +422,6 @@ createApp({
                     else {
                         if(!data[k].manualExpenses) data[k].manualExpenses = []; 
                         if(!data[k].activities) data[k].activities = []; 
-                        // Fix for activities costs defaults
                         data[k].activities.forEach(a => { 
                             if(!a.costs) a.costs = []; 
                             a.costs.forEach(c => { if(!c.currency) c.currency = 'ISK'; }); 
@@ -422,34 +430,29 @@ createApp({
                 }
                 itineraryData.value = data; 
                 
-                // Safe info load
                 const i = localStorage.getItem('iceland_v80_info') || localStorage.getItem('iceland_v71_info'); 
                 try { infoData.value = i ? JSON.parse(i) : { hotels: [] }; } catch(e) { infoData.value = { hotels: [] }; }
                 
                 const r = localStorage.getItem('iceland_rate'); if(r) exchangeRate.value = parseFloat(r);
                 
-                // Logic for Welcome / Sync
                 const isEmpty = !d || Object.keys(data).length === 0 || (Object.keys(data).length <= 15 && Object.values(data).every(d => (!d.activities || d.activities.length===0) && (!d.manualExpenses || d.manualExpenses.length===0)));
                 if(isEmpty && !gistConfig.id) {
                     welcomeModal.open = true;
                 } else if (gistConfig.id && syncStatus.isGuest) {
                     pullFromCloud();
                 }
-            } catch(e) {
-                alert("初始化失敗: " + e.message);
-            }
+            } catch(e) { alert("初始化失敗: " + e.message); }
         }; 
         
         init();
         
         onMounted(() => {
-            // Remove Loader when Vue is ready
             const loader = document.getElementById('app-loader');
-            if(loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 500);
-            }
+            if(loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); }
             document.getElementById('app').style.display = 'flex';
+            
+            // Auto hide banner after 3 seconds
+            setTimeout(() => { showBanner.value = false; }, 3000);
         });
         
         watch([itineraryData, infoData, exchangeRate, totalDays], () => { 
@@ -484,7 +487,9 @@ createApp({
                     totalDays.value = days.length ? Math.max(...days, 15) : 15;
                     syncStatus.unsaved = false;
                     if(!gistConfig.token) syncStatus.isGuest = true;
-                    alert("☁️ 下載成功！");
+                    // Reset banner to show success state
+                    showBanner.value = true;
+                    setTimeout(() => showBanner.value = false, 3000);
                     syncModal.open = false;
                 }
             } catch(e) { alert("同步失敗: " + e.message); }
@@ -515,7 +520,6 @@ createApp({
         const resetSync = () => {
             if(confirm('確定要登出並清除同步設定？')) {
                 gistConfig.id = ''; gistConfig.token = ''; syncStatus.isGuest = false; syncModal.open = false;
-                alert("已登出。");
             }
         };
 
@@ -539,7 +543,6 @@ createApp({
             let list = [];
             for(let i=1; i<=totalDays.value; i++) {
                 const d = itineraryData.value[i];
-                // ES2020 fix: remove optional chaining ?.
                 if(d && d.activities) d.activities.forEach(a => a.costs.forEach(c => { if(parseMoney(c.amount) > 0) list.push({ day: i, title: c.name || a.title || '行程費用', type: c.type, currency: c.currency, amount: c.amount, isManual: false }); }));
                 if(d && d.manualExpenses) d.manualExpenses.forEach(m => list.push({ day: i, title: m.title, id: m.id, type: m.type, currency: m.currency, amount: m.amount, isManual: true }));
             }
@@ -587,7 +590,7 @@ createApp({
         const autoGenerateDesc = () => { const t = form.title || ''; if(t.includes('瀑布')) form.desc = '壯觀瀑布，注意防水。'; else if(t.includes('超市')) form.desc = '補給時間，Bonus 最平。'; else form.desc = '前往 ' + t + ' 探索美景。'; };
         
         const getCardImage = (item) => item.imgUrl || 'https://image.pollinations.ai/prompt/' + encodeURIComponent((item.title||'Iceland')+' travel') + '?width=400&height=225&nologo=true'; const handleImageError = (e) => e.target.src = 'https://picsum.photos/seed/' + Math.random() + '/400/225?grayscale'; const getCategoryStyle = (t) => categoryConfig[t] || categoryConfig.other; const setWeather = (k) => { itineraryData.value[currentDay.value].weather = k; weatherMenuOpen.value = false; };
-        return { currentTab, currentDay, totalDays, itineraryData, infoData, exchangeRate, mapFilter, modal, infoModal, rateModal, syncModal, expenseModal, welcomeModal, form, infoForm, expenseForm, weatherMenuOpen, locating, categoryConfig, costTypes, weatherTypes, switchTab, getDateString, addDay, deleteLastDay, safeCurrentItinerary, currentActivities, getCurrentWeather, setWeather, getCardImage, handleImageError, getCategoryStyle, formatMoney, parseMoney, openAddModal, openEditModal, saveItem, deleteItem, addCost, formatCostInput, openInfoModal, saveInfo, removeInfo, autoLocate, autoGenerateDesc, gistConfig, syncStatus, pullFromCloud, pushToCloud, copyID, resetSync, openGuestSetup, totalTripCostHKD, categoryStats, formatTemp, getCostLabel, groupedFlights, allExpenses, openExpenseModal, openEditExpenseModal, saveManualExpense, deleteManualExpense };
+        return { currentTab, currentDay, totalDays, itineraryData, infoData, exchangeRate, mapFilter, modal, infoModal, rateModal, syncModal, expenseModal, welcomeModal, form, infoForm, expenseForm, weatherMenuOpen, locating, categoryConfig, costTypes, weatherTypes, switchTab, getDateString, addDay, deleteLastDay, safeCurrentItinerary, currentActivities, getCurrentWeather, setWeather, getCardImage, handleImageError, getCategoryStyle, formatMoney, parseMoney, openAddModal, openEditModal, saveItem, deleteItem, addCost, formatCostInput, openInfoModal, saveInfo, removeInfo, autoLocate, autoGenerateDesc, gistConfig, syncStatus, pullFromCloud, pushToCloud, copyID, resetSync, openGuestSetup, totalTripCostHKD, categoryStats, formatTemp, getCostLabel, groupedFlights, allExpenses, openExpenseModal, openEditExpenseModal, saveManualExpense, deleteManualExpense, showBanner };
     }
 }).mount('#app');
 </script>
