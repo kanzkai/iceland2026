@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Iceland Trip - V102 Final Polish</title>
+    <title>Iceland Trip - V104 Mobile Fix</title>
     
     <!-- Crash Reporter -->
     <script>
@@ -82,7 +82,7 @@
 <div id="app-loader">
     <div class="text-3xl mb-4"><i class="fa-solid fa-spinner fa-spin"></i></div>
     <div class="font-bold">正在載入行程...</div>
-    <div class="text-xs opacity-70 mt-2">V102 Final Polish</div>
+    <div class="text-xs opacity-70 mt-2">V104 Mobile Fix</div>
     <button onclick="localStorage.clear(); location.reload();" class="mt-8 px-4 py-2 bg-red-500 rounded text-xs font-bold text-white border border-red-400">重置 App</button>
 </div>
 
@@ -232,27 +232,27 @@
         </div>
     </div>
 
-    <!-- === TAB 5: COST (V102: Final Polish) === -->
+    <!-- === TAB 5: COST (V104: Mobile Fix) === -->
     <div v-show="currentTab === 'budget'" class="px-6 flex-grow overflow-y-auto pt-4 pb-24">
         
-        <!-- V102: Split Layout Total Cost -->
+        <!-- Total Cost -->
         <div class="bg-gradient-to-br from-[#0f4c75] to-[#3282b8] rounded-2xl p-6 text-white shadow-lg mb-6 relative overflow-hidden">
              <div class="flex items-center justify-between relative z-10">
-                 <!-- Left: Amounts -->
+                 <!-- Left: Amounts (Currency Prefix) -->
                  <div class="text-left">
                      <div class="text-[10px] font-bold opacity-60 uppercase tracking-widest mb-1">總花費</div>
-                     <div class="text-3xl font-black font-mono tracking-tight mb-1">{{ formatMoney(totalTripCostHKD) }} <span class="text-sm font-bold opacity-80">HKD</span></div>
-                     <div class="text-[10px] font-mono opacity-50 font-bold">≈ {{ formatMoney(Math.round(totalTripCostHKD / exchangeRate)) }} ISK</div>
+                     <div class="text-3xl font-black font-mono tracking-tight mb-1"><span class="text-lg font-bold opacity-80 mr-1">HK$</span>{{ formatMoney(totalTripCostHKD) }}</div>
+                     <div class="text-[10px] font-mono opacity-50 font-bold">≈ ISK {{ formatMoney(Math.round(totalTripCostHKD / exchangeRate)) }}</div>
                  </div>
-                 <!-- Right: Settings Button (Vertically Centered) -->
+                 <!-- Right: Settings Button -->
                  <div @click="!syncStatus.isGuest && (rateModal.open=true)" class="bg-white/10 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-white/20 transition backdrop-blur-sm border border-white/5 text-right flex-shrink-0 ml-4">
                      <div class="text-[9px] font-bold opacity-70 mb-0.5">匯率設定 <i v-if="!syncStatus.isGuest" class="fa-solid fa-pen ml-1"></i></div>
-                     <div class="text-[11px] font-bold font-mono text-white">1 ISK ≈ {{ exchangeRate }}</div>
+                     <div class="text-[11px] font-bold font-mono text-white">1 ISK ≈ HK$ {{ exchangeRate }}</div>
                  </div>
              </div>
         </div>
 
-        <!-- V102: Centered Card Content + ISK Back -->
+        <!-- Category Stats (Currency Prefix) -->
         <h3 class="font-bold text-slate-700 mb-3 text-sm px-1">分類消費統計</h3>
         <div class="relative mb-6 -mx-6">
             <div class="fade-mask-left"></div><div class="fade-mask-right"></div>
@@ -261,8 +261,8 @@
                     <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs" :class="cat.bg"><i class="fa-solid" :class="cat.icon"></i></div>
                     <div>
                         <div class="text-xs font-bold text-slate-600 mb-0.5 truncate">{{ cat.label }}</div>
-                        <div class="text-xs font-bold font-mono text-slate-800">{{ formatMoney(Math.round(cat.amount)) }} <span class="text-[9px] text-slate-400">HKD</span></div>
-                        <div class="text-[9px] font-mono text-slate-400 mt-0.5">≈ {{ formatMoney(Math.round(cat.amount / exchangeRate)) }} ISK</div>
+                        <div class="text-xs font-bold font-mono text-slate-800"><span class="text-[9px] text-slate-400 mr-0.5">HK$</span>{{ formatMoney(Math.round(cat.amount)) }}</div>
+                        <div class="text-[9px] font-mono text-slate-400 mt-0.5">≈ ISK {{ formatMoney(Math.round(cat.amount / exchangeRate)) }}</div>
                     </div>
                 </div>
                 <div v-if="categoryStats.length === 0" class="w-full text-center text-xs text-slate-400 py-4">暫無數據</div>
@@ -278,10 +278,11 @@
                     <div class="w-1.5 h-4 bg-slate-300 rounded-full"></div>
                     <h4 class="text-xs font-bold text-slate-500">Day {{ dayGroup.day }} <span class="font-normal opacity-70">({{ getDateString(dayGroup.day).date }})</span></h4>
                 </div>
+                <!-- V104: Removed 'hidden sm:inline' to show ISK on mobile -->
                 <div class="flex items-center gap-2">
                     <span class="text-[9px] font-bold text-slate-400">小計:</span>
                     <span class="text-[10px] font-bold font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded">HK$ {{ formatMoney(dayGroup.totalHKD) }}</span>
-                    <span class="text-[9px] font-mono text-slate-400 hidden sm:inline">(≈ {{ formatMoney(Math.round(dayGroup.totalHKD / exchangeRate)) }} ISK)</span>
+                    <span class="text-[9px] font-mono text-slate-400">(≈ ISK {{ formatMoney(Math.round(dayGroup.totalHKD / exchangeRate)) }})</span>
                 </div>
             </div>
             <div v-for="(exp, idx) in dayGroup.items" :key="idx" class="expense-item relative group">
@@ -290,11 +291,11 @@
                     <div class="text-xs font-bold text-slate-700 truncate">{{ exp.title }}</div>
                     <div class="text-[9px] text-slate-400 font-mono">{{ costTypes[exp.type]?.label || '其他' }}</div>
                 </div>
-                <!-- V102: ISK conversion logic restored -->
+                <!-- V103: Currency Prefix -->
                 <div class="text-right flex-shrink-0 mr-2">
                     <div class="text-xs font-bold font-mono text-slate-800">{{ exp.currency }} {{ formatMoney(exp.amount) }}</div>
                     <div class="text-[9px] text-slate-400 font-mono">
-                        <span v-if="exp.currency === 'HK$'">≈ {{ formatMoney(Math.round(parseMoney(exp.amount) / exchangeRate)) }} ISK</span>
+                        <span v-if="exp.currency === 'HK$'">≈ ISK {{ formatMoney(Math.round(parseMoney(exp.amount) / exchangeRate)) }}</span>
                         <span v-else>≈ HK$ {{ formatMoney(Math.round(parseMoney(exp.amount) * exchangeRate)) }}</span>
                     </div>
                 </div>
@@ -329,7 +330,7 @@
 
     <!-- Modals -->
     <div v-if="infoModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6"><div class="absolute inset-0 modal-overlay" @click="infoModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl space-y-4 animate-slide-up"><h3 class="font-bold text-xl text-slate-800">新增住宿</h3><input v-model="infoForm.name" class="modal-input" placeholder="住宿名稱"><input v-model="infoForm.dates" class="modal-input" placeholder="入住日期"><input v-model="infoForm.link" class="modal-input" placeholder="訂單連結 (選填)"><div class="flex gap-3 mt-4"><button @click="infoModal.open=false" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-500">取消</button><button @click="saveInfo" class="flex-1 py-3 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">新增</button></div></div></div>
-    <div v-if="rateModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6"><div class="absolute inset-0 modal-overlay" @click="rateModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl animate-slide-up"><h3 class="font-bold text-xl text-slate-800 mb-6">設定匯率</h3><div class="relative mb-8"><input type="number" v-model="exchangeRate" class="text-4xl text-center border-b-2 border-slate-100 w-full pb-2 font-mono text-slate-700 focus:outline-none focus:border-blue-400" step="0.001"><div class="text-xs text-slate-400 mt-2">1 ISK = HKD</div></div><button @click="rateModal.open=false" class="w-full py-3.5 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">確認設定</button></div></div>
+    <div v-if="rateModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6"><div class="absolute inset-0 modal-overlay" @click="rateModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl animate-slide-up"><h3 class="font-bold text-xl text-slate-800 mb-6">設定匯率</h3><div class="relative mb-8"><input type="number" v-model="exchangeRate" class="text-4xl text-center border-b-2 border-slate-100 w-full pb-2 font-mono text-slate-700 focus:outline-none focus:border-blue-400" step="0.001"><div class="text-xs text-slate-400 mt-2">1 ISK = HK$</div></div><button @click="rateModal.open=false" class="w-full py-3.5 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">確認設定</button></div></div>
     <div v-if="syncModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6"><div class="absolute inset-0 modal-overlay" @click="syncModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center space-y-4 animate-slide-up max-h-[85vh] overflow-y-auto"><div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto text-2xl mb-2"><i class="fa-solid fa-cloud-arrow-up"></i></div><h3 class="font-bold text-xl text-slate-800">GitHub 雲端同步</h3><div v-if="syncStatus.isGuest"><div class="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-4"><p class="text-xs text-orange-600 font-bold mb-2">您目前是「訪客模式」</p><p class="text-[10px] text-slate-500">您可以檢視所有行程和最新花費，但無法修改。</p></div><button @click="pullFromCloud" class="w-full py-3 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg active:scale-95 transition text-xs mb-2"><i class="fa-solid fa-rotate mr-2"></i> 重新整理 (下載最新資料)</button><button @click="resetSync" class="w-full py-3 bg-slate-100 text-slate-500 rounded-xl font-bold active:scale-95 transition text-xs"><i class="fa-solid fa-right-from-bracket mr-2"></i> 登出/切換 ID</button></div><div v-else><div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 text-left"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">同步設定</div><input v-model="gistConfig.id" class="modal-input text-xs mb-2" placeholder="貼上 Gist ID (必填)"><input v-model="gistConfig.token" class="modal-input text-xs" type="password" placeholder="GitHub Token (訪客免填)"><div class="text-[9px] text-slate-400 mt-2 leading-relaxed"><span class="text-blue-500 font-bold">主揪請填 Token</span> 以便上傳修改。<br><span class="text-orange-500 font-bold">隊友/訪客</span> 只需填 ID 即可下載。</div></div><div class="flex gap-2 mb-2"><button @click="pullFromCloud" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold active:scale-95 transition text-xs"><i class="fa-solid fa-cloud-arrow-down mr-2"></i> 下載雲端</button><button @click="pushToCloud" class="flex-1 py-3 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition text-xs"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> 上傳同步</button></div><div v-if="gistConfig.id" class="mt-6 border-t pt-4"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">給朋友的 ID</div><div class="bg-slate-100 p-2 rounded-lg text-xs font-mono text-slate-600 break-all mb-2 select-all">{{ gistConfig.id }}</div><button @click="copyID" class="w-full py-3 bg-green-500 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 active:scale-95 transition text-xs"><i class="fa-regular fa-copy mr-2"></i> 複製 ID 傳給朋友</button></div></div><button @click="syncModal.open=false" class="w-full py-3 bg-slate-100 rounded-xl font-bold text-slate-500 mt-2">關閉</button></div></div>
     <div v-if="expenseModal.open" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"><div class="absolute inset-0 modal-overlay" @click="expenseModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 shadow-2xl animate-slide-up"><h3 class="font-bold text-xl text-slate-800 mb-6">{{ expenseModal.mode==='edit'?'編輯':'記一筆' }}消費</h3><div class="space-y-4"><div><label class="text-xs font-bold text-slate-400 mb-1.5 block">日期</label><select v-model="expenseForm.day" class="modal-input"><option v-for="d in totalDays" :value="d">Day {{d}} ({{ getDateString(d).date }})</option></select></div><div><label class="text-xs font-bold text-slate-400 mb-1.5 block">消費項目</label><input v-model="expenseForm.title" class="modal-input" placeholder="例如: N1 入油"></div><div class="flex gap-3"><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">種類</label><select v-model="expenseForm.type" class="modal-input"><option v-for="(v,k) in costTypes" :value="k">{{v.label}}</option></select></div><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">幣別</label><div class="flex bg-slate-50 rounded-xl p-1 border border-slate-200"><button @click="expenseForm.currency='ISK'" class="flex-1 py-2 rounded-lg text-xs font-bold transition" :class="expenseForm.currency==='ISK'?'bg-white shadow text-[#3282b8]':'text-slate-400'">ISK</button><button @click="expenseForm.currency='HK$'" class="flex-1 py-2 rounded-lg text-xs font-bold transition" :class="expenseForm.currency==='HK$'?'bg-white shadow text-red-500':'text-slate-400'">HK$</button></div></div></div><div><label class="text-xs font-bold text-slate-400 mb-1.5 block">金額</label><input v-model="expenseForm.amount" type="number" class="modal-input font-mono text-xl" placeholder="0"></div><button @click="saveManualExpense" class="w-full py-4 bg-[#3282b8] text-white rounded-2xl font-bold shadow-lg shadow-blue-500/20 mt-4 active:scale-95 transition">儲存記錄</button></div></div></div>
     <div v-if="modal.open" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"><div class="absolute inset-0 modal-overlay transition-opacity" @click="modal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-6"><h3 class="font-extrabold text-xl text-slate-800">{{ modal.mode==='add'?'新增':'編輯' }}行程</h3><button @click="modal.open=false" class="w-8 h-8 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100"><i class="fa-solid fa-xmark"></i></button></div><div class="space-y-5"><div class="flex gap-4"><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">時間</label><input type="time" v-model="form.time" class="modal-input"></div><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">抵達(選填)</label><input type="time" v-model="form.endTime" class="modal-input"></div></div><div class="flex gap-4"><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">種類</label><select v-model="form.type" class="modal-input"><option v-for="(v,k) in categoryConfig" :value="k">{{v.emoji}} {{v.label}}</option></select></div><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">距離</label><input v-model="form.distance" class="modal-input"></div></div><div><label class="text-xs font-bold text-[#3282b8] mb-1.5 block">1. 圖片網址</label><input v-model="form.imgUrl" class="modal-input text-xs" placeholder="留空將由 AI 自動產生"></div><div><label class="text-xs font-bold text-[#3282b8] mb-1.5 block">2. 標題</label><input v-model="form.title" class="modal-input text-lg placeholder:text-slate-300" placeholder="例如: Skógafoss"></div><div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2"><label class="text-xs font-bold text-[#3282b8] block">3. 地點 & 定位</label><div class="flex gap-2"><input v-model="form.location" class="modal-input bg-white" placeholder="輸入地點名稱搜尋"><button @click="autoLocate" class="w-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center transition active:scale-95"><i class="fa-solid" :class="locating?'fa-spinner fa-spin':'fa-map-location-dot'"></i></button></div><div class="flex gap-2 text-[10px] items-center"><input type="number" v-model.number="form.lat" class="border p-1.5 rounded-lg w-20 text-center" placeholder="Lat"><input type="number" v-model.number="form.lng" class="border p-1.5 rounded-lg w-20 text-center" placeholder="Lng"><span v-if="form.lat" class="text-green-600 font-bold ml-auto flex items-center gap-1"><i class="fa-solid fa-check-circle"></i> 已定位</span></div><input v-model="form.mapUrl" class="modal-input bg-white text-xs text-blue-500" placeholder="Google Maps 連結 (選填)"></div><div class="bg-blue-50/30 p-4 rounded-2xl border border-blue-100/50"><div class="flex justify-between mb-2 items-center"><label class="text-xs font-bold text-[#3282b8]">4. 相關費用</label><button @click="addCost" class="text-[10px] bg-white border border-blue-200 text-blue-500 px-2 py-1 rounded-lg font-bold hover:bg-blue-50"><i class="fa-solid fa-plus"></i> 新增</button></div><div v-for="(c,i) in form.costs" :key="i" class="flex flex-col gap-1.5 mb-2 bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm"><div class="flex gap-2 items-center"><select v-model="c.type" class="bg-slate-50 text-xs w-[35%] border-none rounded-lg py-1.5 font-bold text-slate-600"><option v-for="(v,k) in costTypes" :value="k">{{v.label}}</option></select><button @click="c.currency = c.currency==='ISK'?'HK$':'ISK'" class="text-[10px] w-[15%] border rounded-lg py-1.5 font-bold transition-colors" :class="c.currency==='HK$'?'text-red-500 bg-red-50 border-red-100':'text-blue-500 bg-blue-50 border-blue-100'">{{c.currency}}</button><input v-model="c.amount" @blur="formatCostInput(c)" class="text-xs w-[40%] bg-slate-50 border-none rounded-lg px-2 py-1.5 text-right font-mono font-bold" placeholder="0"><button @click="form.costs.splice(i,1)" class="text-slate-300 hover:text-red-400 w-[10%]"><i class="fa-solid fa-xmark"></i></button></div><input v-if="c.type==='other'" v-model="c.name" class="text-xs border border-slate-100 bg-slate-50 rounded-lg px-2 py-1.5 w-full" placeholder="費用名稱"></div></div><div><div class="flex justify-between mb-2 items-center"><label class="text-xs font-bold text-[#3282b8]">5. 備註</label><button @click="autoGenerateDesc" class="text-[10px] bg-purple-100 text-purple-600 px-3 py-1 rounded-full font-bold shadow-sm hover:bg-purple-200 transition"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 撰寫</button></div><textarea v-model="form.desc" class="modal-input leading-relaxed" rows="3" placeholder="輸入行程備註..."></textarea></div></div><div class="mt-8 flex gap-4"><button v-if="modal.mode==='edit'" @click="deleteItem" class="p-4 bg-red-50 text-red-400 rounded-2xl hover:bg-red-100 transition"><i class="fa-solid fa-trash-can text-lg"></i></button><button @click="saveItem" class="flex-1 bg-aurora text-white rounded-2xl py-4 font-bold text-lg shadow-xl shadow-blue-500/20 active:scale-95 transition">儲存確認</button></div></div></div>
