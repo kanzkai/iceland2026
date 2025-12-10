@@ -104,10 +104,14 @@
     <div class="sticky z-40 header-refined-bg pt-6 px-0 relative pb-0 overflow-hidden" :class="(showBanner && (syncStatus.isGuest || gistConfig.id)) ? 'top-0' : '-top-6'">
         <div class="header-glow"></div>
         <div class="flex justify-between items-center mb-2 px-6 relative z-10 pt-2">
-            <button @click="syncModal.open=true" class="w-10 h-10 rounded-2xl bg-white/80 flex items-center justify-center hover:bg-white transition-all active:scale-95 shadow-sm border border-slate-100 relative" :class="syncStatus.unsaved ? 'text-red-500' : 'text-[#3282b8]'">
-                <i class="fa-solid" :class="gistConfig.id ? 'fa-cloud-arrow-up' : 'fa-cloud-gear'"></i>
-                <div v-if="syncStatus.unsaved" class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
-            </button>
+        <button @click="syncModal.open = true"
+  class="w-10 h-10 rounded-2xl bg-white/80 flex items-center justify-center hover:bg-white transition-all active:scale-95 shadow-sm border border-slate-100 relative"
+  :class="syncStatus.unsaved ? 'text-red-500' : 'text-3282b8'">
+  <i class="fa-solid fa-cloud-arrow-up"></i>
+  <div v-if="syncStatus.unsaved"
+       class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+</button>
+
             <div class="flex flex-col items-center">
                 <div class="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase mb-1 drop-shadow-sm">Iceland Trip</div>
                 <div class="bg-gradient-to-r from-[#0f4c75] to-[#3282b8] px-4 py-1.5 rounded-full shadow-lg shadow-blue-900/10">
@@ -117,7 +121,7 @@
             <div class="w-10"></div>
         </div>
         <!-- Date Selector -->
-        <div v-show="currentTab === 'itinerary' || currentTab === 'map'" class="relative z-10 animate-slide-up">
+        <div v-show="currentTab === 'itinerary' || currentTab === 'map' || currentTab === 'hotel'" class="relative z-10 animate-slide-up">
             <div class="fade-mask-left"></div><div class="fade-mask-right"></div>
             <div class="flex overflow-x-auto gap-3 pl-6 pr-6 pt-2 pb-0 no-scrollbar snap-x cursor-grab active:cursor-grabbing items-center relative z-10">
                 <button v-for="d in totalDays" :key="d" @click="currentDay = d" 
@@ -219,18 +223,137 @@
         </div>
     </div>
 
-    <!-- === TAB 4: HOTEL === -->
-    <div v-show="currentTab === 'hotel'" class="px-6 flex-grow overflow-y-auto pt-4">
-        <div class="mb-6">
-            <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-bed text-indigo-400 mr-2"></i>住宿資料</h3><button v-if="!syncStatus.isGuest" @click="openInfoModal('hotel')" class="text-[10px] bg-indigo-50 text-indigo-500 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-100"><i class="fa-solid fa-plus"></i> 新增</button></div>
-            <div v-if="infoData.hotels.length === 0" class="text-xs text-slate-400 text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200"><i class="fa-solid fa-hotel text-2xl mb-2 opacity-50"></i><br>暫無住宿資料</div>
-            <div v-for="(h, idx) in infoData.hotels" :key="idx" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-3 relative group hover:shadow-md transition">
-                <button v-if="!syncStatus.isGuest" @click="removeInfo('hotels', idx)" class="absolute top-3 right-3 text-slate-200 hover:text-red-400 transition"><i class="fa-solid fa-xmark"></i></button>
-                <div class="flex gap-3 mb-3"><div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 flex-shrink-0"><i class="fa-solid fa-bed"></i></div><div class="font-bold text-slate-800 text-base leading-tight pt-1">{{ h.name }}</div></div>
-                <div class="flex justify-between items-center"><div class="text-xs text-slate-500"><i class="fa-solid fa-calendar-check mr-1.5 text-indigo-300"></i> {{ h.dates }}</div><a v-if="h.link" :href="h.link" target="_blank" class="text-[10px] text-white bg-indigo-400 px-2 py-1 rounded hover:bg-indigo-500 transition font-bold"><i class="fa-solid fa-link"></i> 訂單</a></div>
+    <!-- === TAB 4: HOTEL (每日住宿卡) === -->
+<div v-show="currentTab === 'hotel'" class="px-6 flex-grow overflow-y-auto pt-4 pb-24">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-slate-700 text-sm flex items-center">
+            <i class="fa-solid fa-bed text-indigo-400 mr-2"></i>每日住宿
+        </h3>
+        <span class="text-[10px] text-slate-400">
+            Day {{ currentDay }} · {{ getDateString(currentDay).date }}
+        </span>
+    </div>
+
+    <!-- 沒有住宿時 -->
+    <div v-if="filteredHotels.length === 0"
+         class="text-xs text-slate-400 text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+        <i class="fa-solid fa-hotel text-2xl mb-2 opacity-50"></i><br>
+        這天暫未設定住宿<br>
+        <span class="text-[10px] mt-1 inline-block">按右下角按鈕新增</span>
+    </div>
+
+    <!-- 每日住宿卡 (同一天可以多張) -->
+    <div v-else class="space-y-4">
+        <div v-for="(h, idx) in filteredHotels" :key="idx"
+             class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative group">
+            <!-- 右上角刪除 / 編輯 -->
+            <div class="absolute top-3 right-3 flex gap-2 z-10" v-if="!syncStatus.isGuest">
+                <button @click="openHotelModal(h, idx)"
+                        class="w-8 h-8 rounded-full bg-white/80 text-slate-500 flex items-center justify-center shadow">
+                    <i class="fa-solid fa-pen text-xs"></i>
+                </button>
+                <button @click="removeHotel(idx)"
+                        class="w-8 h-8 rounded-full bg-red-50 text-red-400 flex items-center justify-center shadow">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+            </div>
+
+            <div class="relative">
+                <img :src="h.photo || defaultHotelPhoto"
+                     class="w-full h-44 object-cover bg-slate-100"
+                     @error="handleHotelImageError">
+                <a :href="h.mapUrl || ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.address || h.name))"
+                   target="_blank"
+                   class="absolute bottom-3 right-3 bg-black/60 text-white text-[10px] px-3 py-1.5 rounded-full flex items-center gap-1 backdrop-blur">
+                    <i class="fa-solid fa-location-dot text-[9px]"></i> 在地圖打開
+                </a>
+            </div>
+
+            <div class="p-4 space-y-3">
+                <div>
+                    <div class="text-xs font-bold text-indigo-400 mb-0.5">住宿名稱</div>
+                    <div class="text-sm font-bold text-slate-800">
+                        {{ h.name || '未命名住宿' }}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-xs font-bold text-slate-400 mb-0.5">地址</div>
+                    <div class="text-[11px] text-slate-600 leading-relaxed">
+                        <span v-if="h.address">{{ h.address }}</span>
+                        <span v-else class="text-slate-300">未填寫地址</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 text-[11px] text-slate-600">
+                    <div class="flex-1 bg-slate-50 rounded-xl p-2.5 flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Check-in</div>
+                            <div class="font-mono font-bold">
+                                {{ h.checkIn || '—' }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 bg-slate-50 rounded-xl p-2.5 flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Check-out</div>
+                            <div class="font-mono font-bold">
+                                {{ h.checkOut || '—' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl p-3 text-[11px] text-slate-600 flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center">
+                        <i class="fa-solid fa-dollar-sign"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">價錢 / 付款</div>
+                        <div class="font-mono font-bold">
+                            {{ h.price || '未填寫金額' }}
+                        </div>
+                        <div class="text-[10px] text-slate-400" v-if="h.priceNote">
+                            {{ h.priceNote }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl p-3 text-[11px] text-slate-600 flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">訂單號碼</div>
+                        <div class="font-mono font-bold">
+                            {{ h.bookingNo || '未填寫' }}
+                        </div>
+                    </div>
+                    <a v-if="h.bookingUrl"
+                       :href="h.bookingUrl"
+                       target="_blank"
+                       class="text-[10px] bg-indigo-500 text-white px-2 py-1 rounded-lg font-bold">
+                        訂單
+                    </a>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- 右下角新增按鈕 -->
+    <button v-if="!syncStatus.isGuest"
+            @click="openHotelModal()"
+            class="fixed bottom-24 right-6 bg-indigo-500 text-white px-5 py-3 rounded-xl shadow-xl font-bold text-xs flex items-center gap-2 active:scale-95 transition z-30">
+        <i class="fa-solid fa-plus"></i> 新增住宿
+    </button>
+</div>
+
 
     <!-- === TAB 5: COST (V104: Mobile Fix) === -->
     <div v-show="currentTab === 'budget'" class="px-6 flex-grow overflow-y-auto pt-4 pb-24">
@@ -281,7 +404,10 @@
                 <!-- V104: Removed 'hidden sm:inline' to show ISK on mobile -->
                 <div class="flex items-center gap-2">
                     <span class="text-[9px] font-bold text-slate-400">小計:</span>
-                    <span class="text-[10px] font-bold font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded">HK$ {{ formatMoney(dayGroup.totalHKD) }}</span>
+                    <span class="text-10px font-bold font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+  HK$ {{ formatMoney(Math.round(dayGroup.totalHKD)) }}
+</span>
+
                     <span class="text-[9px] font-mono text-slate-400">(≈ ISK {{ formatMoney(Math.round(dayGroup.totalHKD / exchangeRate)) }})</span>
                 </div>
             </div>
@@ -328,8 +454,100 @@
         <button @click="switchTab('info')" class="flex-1 flex flex-col items-center gap-1.5 transition-colors group" :class="currentTab === 'info' ? 'tab-active' : 'tab-inactive'"><div class="text-xl"><i class="fa-solid fa-circle-info"></i></div><span class="text-[9px] font-bold tracking-wide">資訊</span></button>
     </div>
 
-    <!-- Modals -->
-    <div v-if="infoModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6"><div class="absolute inset-0 modal-overlay" @click="infoModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl space-y-4 animate-slide-up"><h3 class="font-bold text-xl text-slate-800">新增住宿</h3><input v-model="infoForm.name" class="modal-input" placeholder="住宿名稱"><input v-model="infoForm.dates" class="modal-input" placeholder="入住日期"><input v-model="infoForm.link" class="modal-input" placeholder="訂單連結 (選填)"><div class="flex gap-3 mt-4"><button @click="infoModal.open=false" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-500">取消</button><button @click="saveInfo" class="flex-1 py-3 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">新增</button></div></div></div>
+    <!-- Hotel Modal -->
+<div v-if="hotelModal.open" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="absolute inset-0 modal-overlay" @click="hotelModal.open=false"></div>
+    <div class="relative bg-white w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-8 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h3 class="font-bold text-xl text-slate-800">
+                    Day {{ currentDay }} 住宿設定
+                </h3>
+                <p class="text-[10px] text-slate-400 mt-1">
+                    {{ getDateString(currentDay).date }}
+                </p>
+            </div>
+            <button @click="hotelModal.open=false"
+                    class="w-8 h-8 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- 智能小工具列 -->
+        <div class="flex items-center justify-between mb-4 text-[11px]">
+            <button @click="copyYesterdayHotel"
+                    class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center gap-1 hover:bg-slate-200">
+                <i class="fa-solid fa-copy text-[10px]"></i>
+                複製昨天住宿
+            </button>
+            
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="text-xs font-bold text-slate-400 mb-1.5 block">相片網址</label>
+                <input v-model="hotelForm.photo" class="modal-input text-xs" placeholder="可貼 booking.com / 官網圖片地址">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-slate-400 mb-1.5 block">住宿 / 酒店名稱</label>
+                <input v-model="hotelForm.name" class="modal-input" placeholder="例如：Fosshotel Glacier Lagoon">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-slate-400 mb-1.5 block">地址</label>
+                <textarea v-model="hotelForm.address" class="modal-input text-xs" rows="2" placeholder="完整地址，方便對應地圖"></textarea>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-slate-400 mb-1.5 block">地圖連結 (Google Maps)</label>
+                <input v-model="hotelForm.mapUrl" class="modal-input text-xs" placeholder="https://maps.google.com/...">
+            </div>
+
+            <div class="flex gap-3">
+                <div class="w-1/2">
+                    <label class="text-xs font-bold text-slate-400 mb-1.5 block">Check-in 時間</label>
+                    <input v-model="hotelForm.checkIn" class="modal-input text-xs" placeholder="例如：15:00">
+                </div>
+                <div class="w-1/2">
+                    <label class="text-xs font-bold text-slate-400 mb-1.5 block">Check-out 時間</label>
+                    <input v-model="hotelForm.checkOut" class="modal-input text-xs" placeholder="例如：11:00">
+                </div>
+            </div>
+
+            <div>
+                <label class="text-xs font-bold text-slate-400 mb-1.5 block">價錢</label>
+                <input v-model="hotelForm.price" class="modal-input text-xs" placeholder="例如：HK$3,200 / ISK 40,000">
+            </div>
+
+            <div>
+                <label class="text-xs font-bold text-slate-400 mb-1.5 block">付款狀態</label>
+                <input v-model="hotelForm.priceNote" class="modal-input text-xs" placeholder="已全付 / 到付 / 已付訂金 等">
+            </div>
+
+            <div>
+                <label class="text-xs font-bold text-slate-400 mb-1.5 block">訂單號碼</label>
+                <input v-model="hotelForm.bookingNo" class="modal-input text-xs" placeholder="Booking / Agoda / 官網編號">
+            </div>
+
+            <div>
+                <label class="text-xs font-bold text-slate-400 mb-1.5 block">訂單連結 (選填)</label>
+                <input v-model="hotelForm.bookingUrl" class="modal-input text-xs" placeholder="可貼 booking.com 訂單頁 URL">
+            </div>
+        </div>
+
+        <div class="mt-6 flex gap-3">
+            <button v-if="hotelModal.editIndex !== null"
+                    @click="deleteHotel"
+                    class="w-20 py-3 bg-red-50 text-red-400 rounded-2xl font-bold text-xs hover:bg-red-100">
+                刪除
+            </button>
+            <button @click="saveHotel"
+                    class="flex-1 py-3 bg-indigo-500 text-white rounded-2xl font-bold shadow-lg shadow-indigo-500/20 active:scale-95 text-sm">
+                儲存住宿
+            </button>
+        </div>
+    </div>
+</div>
+
+
     <div v-if="rateModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6"><div class="absolute inset-0 modal-overlay" @click="rateModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl animate-slide-up"><h3 class="font-bold text-xl text-slate-800 mb-6">設定匯率</h3><div class="relative mb-8"><input type="number" v-model="exchangeRate" class="text-4xl text-center border-b-2 border-slate-100 w-full pb-2 font-mono text-slate-700 focus:outline-none focus:border-blue-400" step="0.001"><div class="text-xs text-slate-400 mt-2">1 ISK = HK$</div></div><button @click="rateModal.open=false" class="w-full py-3.5 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">確認設定</button></div></div>
     <div v-if="syncModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6"><div class="absolute inset-0 modal-overlay" @click="syncModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center space-y-4 animate-slide-up max-h-[85vh] overflow-y-auto"><div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto text-2xl mb-2"><i class="fa-solid fa-cloud-arrow-up"></i></div><h3 class="font-bold text-xl text-slate-800">GitHub 雲端同步</h3><div v-if="syncStatus.isGuest"><div class="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-4"><p class="text-xs text-orange-600 font-bold mb-2">您目前是「訪客模式」</p><p class="text-[10px] text-slate-500">您可以檢視所有行程和最新花費，但無法修改。</p></div><button @click="pullFromCloud" class="w-full py-3 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg active:scale-95 transition text-xs mb-2"><i class="fa-solid fa-rotate mr-2"></i> 重新整理 (下載最新資料)</button><button @click="resetSync" class="w-full py-3 bg-slate-100 text-slate-500 rounded-xl font-bold active:scale-95 transition text-xs"><i class="fa-solid fa-right-from-bracket mr-2"></i> 登出/切換 ID</button></div><div v-else><div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 text-left"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">同步設定</div><input v-model="gistConfig.id" class="modal-input text-xs mb-2" placeholder="貼上 Gist ID (必填)"><input v-model="gistConfig.token" class="modal-input text-xs" type="password" placeholder="GitHub Token (訪客免填)"><div class="text-[9px] text-slate-400 mt-2 leading-relaxed"><span class="text-blue-500 font-bold">主揪請填 Token</span> 以便上傳修改。<br><span class="text-orange-500 font-bold">隊友/訪客</span> 只需填 ID 即可下載。</div></div><div class="flex gap-2 mb-2"><button @click="pullFromCloud" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold active:scale-95 transition text-xs"><i class="fa-solid fa-cloud-arrow-down mr-2"></i> 下載雲端</button><button @click="pushToCloud" class="flex-1 py-3 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition text-xs"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> 上傳同步</button></div><div v-if="gistConfig.id" class="mt-6 border-t pt-4"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">給朋友的 ID</div><div class="bg-slate-100 p-2 rounded-lg text-xs font-mono text-slate-600 break-all mb-2 select-all">{{ gistConfig.id }}</div><button @click="copyID" class="w-full py-3 bg-green-500 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 active:scale-95 transition text-xs"><i class="fa-regular fa-copy mr-2"></i> 複製 ID 傳給朋友</button></div></div><button @click="syncModal.open=false" class="w-full py-3 bg-slate-100 rounded-xl font-bold text-slate-500 mt-2">關閉</button></div></div>
     <div v-if="expenseModal.open" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"><div class="absolute inset-0 modal-overlay" @click="expenseModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 shadow-2xl animate-slide-up"><h3 class="font-bold text-xl text-slate-800 mb-6">{{ expenseModal.mode==='edit'?'編輯':'記一筆' }}消費</h3><div class="space-y-4"><div><label class="text-xs font-bold text-slate-400 mb-1.5 block">日期</label><select v-model="expenseForm.day" class="modal-input"><option v-for="d in totalDays" :value="d">Day {{d}} ({{ getDateString(d).date }})</option></select></div><div><label class="text-xs font-bold text-slate-400 mb-1.5 block">消費項目</label><input v-model="expenseForm.title" class="modal-input" placeholder="例如: N1 入油"></div><div class="flex gap-3"><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">種類</label><select v-model="expenseForm.type" class="modal-input"><option v-for="(v,k) in costTypes" :value="k">{{v.label}}</option></select></div><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">幣別</label><div class="flex bg-slate-50 rounded-xl p-1 border border-slate-200"><button @click="expenseForm.currency='ISK'" class="flex-1 py-2 rounded-lg text-xs font-bold transition" :class="expenseForm.currency==='ISK'?'bg-white shadow text-[#3282b8]':'text-slate-400'">ISK</button><button @click="expenseForm.currency='HK$'" class="flex-1 py-2 rounded-lg text-xs font-bold transition" :class="expenseForm.currency==='HK$'?'bg-white shadow text-red-500':'text-slate-400'">HK$</button></div></div></div><div><label class="text-xs font-bold text-slate-400 mb-1.5 block">金額</label><input v-model="expenseForm.amount" type="number" class="modal-input font-mono text-xl" placeholder="0"></div><button @click="saveManualExpense" class="w-full py-4 bg-[#3282b8] text-white rounded-2xl font-bold shadow-lg shadow-blue-500/20 mt-4 active:scale-95 transition">儲存記錄</button></div></div></div>
@@ -345,7 +563,7 @@ const costTypes = {
     parking: { label: '停車費', bg: 'bg-slate-100 text-slate-500', icon: 'fa-square-parking' }, 
     toll: { label: '路費', bg: 'bg-slate-100 text-slate-500', icon: 'fa-road' }, 
     ticket: { label: '入場費', bg: 'bg-purple-50 text-purple-500', icon: 'fa-ticket' }, 
-    stay: { label: '住宿費', bg: 'bg-indigo-50 text-indigo-500', icon: 'fa-bed' }, 
+    hotel: { label: '住宿費', bg: 'bg-indigo-50 text-indigo-500', icon: 'fa-bed' }, 
     food: { label: '餐飲', bg: 'bg-orange-50 text-orange-400', icon: 'fa-utensils' }, 
     gas: { label: '入油費', bg: 'bg-red-50 text-red-500', icon: 'fa-gas-pump' }, 
     shopping: { label: '購物', bg: 'bg-pink-50 text-pink-400', icon: 'fa-bag-shopping' },
@@ -375,6 +593,168 @@ createApp({
         const gistConfig = reactive({ id: '', token: '' });
         const syncStatus = reactive({ isGuest: false, unsaved: false });
         const showBanner = ref(true); 
+
+const defaultHotelPhoto = 'https://picsum.photos/800/450?blur=2';
+
+const hotelModal = reactive({
+    open: false,
+    editIndex: null // null = 新增；數字 = 編輯 infoData.hotels 的 index
+});
+
+const hotelForm = reactive({
+    day: 1,
+    name: '',
+    photo: '',
+    address: '',
+    mapUrl: '',
+    checkIn: '',
+    checkOut: '',
+    price: '',
+    priceNote: '',
+    bookingNo: '',
+    bookingUrl: '',
+});
+
+// 只顯示當前 Day 的酒店
+const filteredHotels = computed(() =>
+    infoData.value.hotels.filter(h => h.day === currentDay.value)
+);
+
+const handleHotelImageError = (e) => {
+    e.target.src = defaultHotelPhoto + '&seed=' + (Math.random()*1000|0);
+};
+
+const openHotelModal = (hotel = null, index = null) => {
+    hotelModal.open = true;
+    hotelModal.editIndex = index;
+    hotelForm.day = currentDay.value;
+    hotelForm.name = hotel?.name || '';
+    hotelForm.photo = hotel?.photo || '';
+    hotelForm.address = hotel?.address || '';
+    hotelForm.mapUrl = hotel?.mapUrl || '';
+    hotelForm.checkIn = hotel?.checkIn || '15:00';
+    hotelForm.checkOut = hotel?.checkOut || '11:00';
+    hotelForm.price = hotel?.price || '';
+    hotelForm.priceNote = hotel?.priceNote || '';
+    hotelForm.bookingNo = hotel?.bookingNo || '';
+    hotelForm.bookingUrl = hotel?.bookingUrl || '';
+    hotelForm.syncToExpense = true;  // 每次打開預設勾選
+};
+
+const copyYesterdayHotel = () => {
+    if (currentDay.value <= 1 || !infoData.value.hotels || infoData.value.hotels.length === 0) return;
+
+    const prevDay = currentDay.value - 1;
+    const prevHotels = infoData.value.hotels.filter(h => h.day === prevDay);
+    if (prevHotels.length === 0) return;
+
+    const last = prevHotels[prevHotels.length - 1];
+
+    hotelModal.open = true;
+    hotelModal.editIndex = null;
+    hotelForm.day = currentDay.value;
+    hotelForm.name = last.name || '';
+    hotelForm.photo = last.photo || '';
+    hotelForm.address = last.address || '';
+    hotelForm.mapUrl = last.mapUrl || '';
+    hotelForm.checkIn = last.checkIn || '15:00';
+    hotelForm.checkOut = last.checkOut || '11:00';
+    hotelForm.price = last.price || '';
+    hotelForm.priceNote = last.priceNote || '';
+    hotelForm.bookingNo = last.bookingNo || '';
+    hotelForm.bookingUrl = last.bookingUrl || '';
+    hotelForm.syncToExpense = true;
+};
+
+const saveHotel = () => {
+    const payload = {
+        day: hotelForm.day,
+        name: hotelForm.name.trim(),
+        photo: hotelForm.photo.trim(),
+        address: hotelForm.address.trim(),
+        mapUrl: hotelForm.mapUrl.trim(),
+        checkIn: hotelForm.checkIn.trim(),
+        checkOut: hotelForm.checkOut.trim(),
+        price: hotelForm.price.trim(),
+        priceNote: hotelForm.priceNote.trim(),
+        bookingNo: hotelForm.bookingNo.trim(),
+        bookingUrl: hotelForm.bookingUrl.trim()
+    };
+
+    if (!infoData.value.hotels) infoData.value.hotels = [];
+
+    if (hotelModal.editIndex === null) {
+        infoData.value.hotels.push(payload);
+    } else {
+        infoData.value.hotels.splice(hotelModal.editIndex, 1, payload);
+    }
+
+    // 新增：同步到花費
+    addOrUpdateHotelExpense(payload);
+
+    hotelModal.open = false;
+};
+
+const addOrUpdateHotelExpense = (hotel) => {
+    if (!hotel.price) return;
+
+    // 從字串抽出金額與幣別，簡單規則：看到 HK$ 就用 HK$，否則當 ISK
+    let currency = 'ISK';
+    let raw = hotel.price;
+    if (raw.includes('HK$')) currency = 'HK$';
+    const numMatch = raw.replace(/,/g, '').match(/(\d+(\.\d+)?)/);
+    if (!numMatch) return;
+
+    const amount = Number(numMatch[1]);
+    if (!amount) return;
+
+    const title = hotel.name || '未命名住宿';
+
+    // 在 manualExpenses 或 allExpenses 裡新增一筆住宿花費
+    if (!itineraryData.value[hotel.day]) {
+        itineraryData.value[hotel.day] = {
+            date: `DAY ${hotel.day}`,
+            region: '',
+            weather: 'sunny',
+            temp: '',
+            activities: [],
+            manualExpenses: []
+        };
+    }
+    if (!itineraryData.value[hotel.day].manualExpenses) {
+        itineraryData.value[hotel.day].manualExpenses = [];
+    }
+
+    const list = itineraryData.value[hotel.day].manualExpenses;
+    const existing = list.find(e => e.type === 'hotel' && e.title === title);
+
+    const expense = {
+        id: existing?.id || Date.now(),
+        day: hotel.day,
+        title,
+        type: 'hotel', // 這個保持 'hotel'，方便用在 costTypes['hotel']
+        currency,
+        amount
+    };
+
+    if (existing) {
+        Object.assign(existing, expense);
+    } else {
+        list.push(expense);
+    }
+};
+
+
+const removeHotel = (idx) => {
+    if (!confirm('確定刪除此住宿？')) return;
+    infoData.value.hotels.splice(idx, 1);
+};
+
+const deleteHotel = () => {
+    if (hotelModal.editIndex === null) return;
+    removeHotel(hotelModal.editIndex);
+    hotelModal.open = false;
+};
 
         const form = reactive({ id: null, time: '', endTime: '', type: 'camera', title: '', distance: '', location: '', lat: null, lng: null, mapUrl: '', imgUrl: '', costs: [], desc: '' });
         const infoForm = reactive({ name: '', dates: '', link: '' });
@@ -516,7 +896,18 @@ createApp({
         const getCategoryStyle = (t) => categoryConfig[t] || categoryConfig.other; 
         const setWeather = (k) => { itineraryData.value[currentDay.value].weather = k; weatherMenuOpen.value = false; };
         
-        return { currentTab, currentDay, totalDays, itineraryData, infoData, exchangeRate, mapFilter, modal, infoModal, rateModal, syncModal, expenseModal, welcomeModal, form, infoForm, expenseForm, weatherMenuOpen, locating, categoryConfig, costTypes, weatherTypes, switchTab, getDateString, addDay, deleteLastDay, safeCurrentItinerary, currentActivities, getCurrentWeather, setWeather, getCardImage, handleImageError, getCategoryStyle, formatMoney, parseMoney, openAddModal, openEditModal, saveItem, deleteItem, addCost, formatCostInput, openInfoModal, saveInfo, removeInfo, autoLocate, autoGenerateDesc, gistConfig, syncStatus, pullFromCloud, pushToCloud, copyID, resetSync, openGuestSetup, totalTripCostHKD, categoryStats, formatTemp, getCostLabel, groupedFlights, allExpenses, groupedExpenses, openExpenseModal, openEditExpenseModal, saveManualExpense, deleteManualExpense, showBanner, mapMode, updateMapLayers };
+        return { currentTab, currentDay, totalDays, itineraryData, infoData, exchangeRate, mapFilter, modal, infoModal, rateModal, syncModal, expenseModal, welcomeModal, form, infoForm, expenseForm, weatherMenuOpen, locating, categoryConfig, costTypes, weatherTypes, switchTab, getDateString, addDay, deleteLastDay, safeCurrentItinerary, currentActivities, getCurrentWeather, setWeather, getCardImage, handleImageError, getCategoryStyle, formatMoney, parseMoney, openAddModal, openEditModal, saveItem, deleteItem, addCost, formatCostInput, openInfoModal, saveInfo, removeInfo, autoLocate, autoGenerateDesc, gistConfig, syncStatus, pullFromCloud, pushToCloud, copyID, resetSync, openGuestSetup, totalTripCostHKD, categoryStats, formatTemp, getCostLabel, groupedFlights, allExpenses, groupedExpenses, openExpenseModal, openEditExpenseModal, saveManualExpense, deleteManualExpense, showBanner, mapMode, updateMapLayers,defaultHotelPhoto,
+hotelModal,
+hotelForm,
+filteredHotels,
+openHotelModal,
+saveHotel,
+removeHotel,
+deleteHotel,
+handleHotelImageError,
+copyYesterdayHotel,
+addOrUpdateHotelExpense,
+ };
     }
 }).mount('#app');
 </script>
