@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Iceland Trip - V109.2</title>
+    <title>Iceland Trip - v113.5 ExpBtn</title>
     
     <!-- Crash Reporter -->
     <script>
@@ -82,7 +82,7 @@
 <div id="app-loader">
     <div class="text-3xl mb-4"><i class="fa-solid fa-spinner fa-spin"></i></div>
     <div class="font-bold">正在載入行程...</div>
-    <div class="text-xs opacity-70 mt-2">V104 Mobile Fix</div>
+    <div class="text-xs opacity-70 mt-2">v113.5</div>
     <button onclick="localStorage.clear(); location.reload();" class="mt-8 px-4 py-2 bg-red-500 rounded text-xs font-bold text-white border border-red-400">重置 App</button>
 </div>
 
@@ -104,14 +104,10 @@
     <div class="sticky z-40 header-refined-bg pt-6 px-0 relative pb-0 overflow-hidden" :class="(showBanner && (syncStatus.isGuest || gistConfig.id)) ? 'top-0' : '-top-6'">
         <div class="header-glow"></div>
         <div class="flex justify-between items-center mb-2 px-6 relative z-10 pt-2">
-        <button @click="syncModal.open = true"
-  class="w-10 h-10 rounded-2xl bg-white/80 flex items-center justify-center hover:bg-white transition-all active:scale-95 shadow-sm border border-slate-100 relative"
-  :class="syncStatus.unsaved ? 'text-red-500' : 'text-3282b8'">
-  <i class="fa-solid fa-cloud-arrow-up"></i>
-  <div v-if="syncStatus.unsaved"
-       class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
-</button>
-
+            <button @click="syncModal.open=true" class="w-10 h-10 rounded-2xl bg-white/80 flex items-center justify-center hover:bg-white transition-all active:scale-95 shadow-sm border border-slate-100 relative" :class="syncStatus.unsaved ? 'text-red-500' : 'text-[#3282b8]'">
+                <i class="fa-solid" :class="gistConfig.id ? 'fa-cloud-arrow-up' : 'fa-cloud-gear'"></i>
+                <div v-if="syncStatus.unsaved" class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+            </button>
             <div class="flex flex-col items-center">
                 <div class="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase mb-1 drop-shadow-sm">Iceland Trip</div>
                 <div class="bg-gradient-to-r from-[#0f4c75] to-[#3282b8] px-4 py-1.5 rounded-full shadow-lg shadow-blue-900/10">
@@ -121,7 +117,7 @@
             <div class="w-10"></div>
         </div>
         <!-- Date Selector -->
-        <div v-show="currentTab === 'itinerary' || currentTab === 'map' || currentTab === 'hotel'" class="relative z-10 animate-slide-up">
+        <div v-show="['itinerary', 'map', 'hotel'].includes(currentTab)" class="relative z-10 animate-slide-up">
             <div class="fade-mask-left"></div><div class="fade-mask-right"></div>
             <div class="flex overflow-x-auto gap-3 pl-6 pr-6 pt-2 pb-0 no-scrollbar snap-x cursor-grab active:cursor-grabbing items-center relative z-10">
                 <button v-for="d in totalDays" :key="d" @click="currentDay = d" 
@@ -223,139 +219,71 @@
         </div>
     </div>
 
-    <!-- === TAB 4: HOTEL (每日住宿卡) === -->
-<div v-show="currentTab === 'hotel'" class="px-6 flex-grow overflow-y-auto pt-4 pb-24">
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="font-bold text-slate-700 text-sm flex items-center">
-            <i class="fa-solid fa-bed text-indigo-400 mr-2"></i>每日住宿
-        </h3>
-        <span class="text-[10px] text-slate-400">
-            Day {{ currentDay }} · {{ getDateString(currentDay).date }}
-        </span>
-    </div>
+    <!-- === TAB 4: HOTEL === -->
+    
+    <div v-show="currentTab === 'hotel'" class="px-6 flex-grow overflow-y-auto pt-4 pb-24">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="font-bold text-lg text-slate-800">住宿資訊</h2>
+        </div>
 
-    <!-- 沒有住宿時 -->
-    <div v-if="filteredHotels.length === 0"
-         class="text-xs text-slate-400 text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-        <i class="fa-solid fa-hotel text-2xl mb-2 opacity-50"></i><br>
-        這天暫未設定住宿<br>
-        <span class="text-[10px] mt-1 inline-block">按右下角按鈕新增</span>
-    </div>
+        <div v-if="currentDayHotels.length === 0" class="text-center py-16 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+            <i class="fa-solid fa-bed text-4xl text-slate-300 mb-4"></i>
+            <p class="text-xs text-slate-400 font-bold">Day {{ currentDay }} 未有住宿安排</p>
+            <p class="text-[10px] text-slate-400 mt-1">點擊右下角新增</p>
+        </div>
 
-    <!-- 每日住宿卡 (同一天可以多張) -->
-    <div v-else class="space-y-4">
-        <div v-for="(h, idx) in filteredHotels" :key="idx"
-             class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative group">
-            <!-- 右上角刪除 / 編輯 -->
-            <div class="absolute top-3 right-3 flex gap-2 z-10" v-if="!syncStatus.isGuest">
-                <button @click="openHotelModal(h, idx)"
-                        class="w-8 h-8 rounded-full bg-white/80 text-slate-500 flex items-center justify-center shadow">
-                    <i class="fa-solid fa-pen text-xs"></i>
-                </button>
-                <button @click="removeHotel(idx)"
-                        class="w-8 h-8 rounded-full bg-red-50 text-red-400 flex items-center justify-center shadow">
-                    <i class="fa-solid fa-xmark text-xs"></i>
-                </button>
+        <div v-for="h in currentDayHotels" :key="h.id" class="bg-white rounded-2xl shadow-sm border border-slate-100 mb-4 overflow-hidden group">
+            <div v-if="h.imgUrl" class="ratio-16-9 overflow-hidden bg-slate-100 relative">
+                <img :src="h.imgUrl" @error="handleImageError" class="w-full h-full object-cover"/>
             </div>
 
-            <div class="relative">
-                <img :src="h.photo || defaultHotelPhoto"
-                     class="w-full h-44 object-cover bg-slate-100"
-                     @error="handleHotelImageError">
-                <a :href="h.mapUrl || ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.address || h.name))"
-                   target="_blank"
-                   class="absolute bottom-3 right-3 bg-black/60 text-white text-[10px] px-3 py-1.5 rounded-full flex items-center gap-1 backdrop-blur">
-                    <i class="fa-solid fa-location-dot text-[9px]"></i> 在地圖打開
-                </a>
-            </div>
-
-            <div class="p-4 space-y-3">
-                <div>
-                    <div class="text-xs font-bold text-indigo-400 mb-0.5">住宿名稱</div>
-                    <div class="text-sm font-bold text-slate-800">
-                        {{ h.name || '未命名住宿' }}
+            <div class="p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="font-bold text-slate-800 text-base leading-tight pr-4">{{ h.name }}</h3>
+                    <div class="flex gap-2">
+                         <button v-if="!syncStatus.isGuest" @click="openEditInfoModal('hotel', h)" class="text-slate-300 hover:text-blue-500 text-xs w-6 h-6 flex items-center justify-center bg-slate-50 rounded-full"><i class="fa-solid fa-pencil"></i></button>
+                         <button v-if="!syncStatus.isGuest" @click="removeInfo('hotels', h.id)" class="text-slate-300 hover:text-red-400 text-xs w-6 h-6 flex items-center justify-center bg-slate-50 rounded-full"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>
 
-                <div>
-                    <div class="text-xs font-bold text-slate-400 mb-0.5">地址</div>
-                    <div class="text-[11px] text-slate-600 leading-relaxed">
-                        <span v-if="h.address">{{ h.address }}</span>
-                        <span v-else class="text-slate-300">未填寫地址</span>
+                <div class="space-y-3 text-xs text-slate-600 mb-4">
+                    <div v-if="h.address">
+                        <i class="fa-solid fa-location-dot w-4 text-center text-slate-400 mr-1.5"></i>
+                        <a :href="h.mapUrl || ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(h.address))" target="_blank" class="hover:text-blue-500 underline decoration-slate-200 underline-offset-2">
+                            {{ h.address }} <i class="fa-solid fa-arrow-up-right-from-square text-[9px] ml-0.5 opacity-50"></i>
+                        </a>
+                    </div>
+                    <div><i class="fa-solid fa-clock w-4 text-center text-slate-400 mr-1.5"></i>入住: {{ h.checkInTime }} / 退房: {{ h.checkOutTime }}</div>
+                    <div v-if="h.bookingRef"><i class="fa-solid fa-receipt w-4 text-center text-slate-400 mr-1.5"></i>訂單號碼: <span class="font-mono bg-slate-100 px-1 rounded text-slate-500">{{ h.bookingRef }}</span></div>
+                    <div v-if="h.freeCancelDate" class="text-[10px] text-red-500 font-bold mt-1">
+                        <i class="fa-solid fa-circle-exclamation w-4 text-center mr-1.5"></i>{{ h.freeCancelDate ? parseInt(h.freeCancelDate.split('-')[1]) + '月' + parseInt(h.freeCancelDate.split('-')[2]) + '日' : '' }} 前可免費取消
                     </div>
                 </div>
 
-                <div class="flex gap-3 text-[11px] text-slate-600">
-                    <div class="flex-1 bg-slate-50 rounded-xl p-2.5 flex items-center gap-2">
-                        <div class="w-7 h-7 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center">
-                            <i class="fa-solid fa-right-to-bracket"></i>
-                        </div>
-                        <div>
-                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Check-in</div>
-                            <div class="font-mono font-bold">
-                                {{ h.checkIn || '—' }}
-                            </div>
-                        </div>
+                <div class="flex justify-between items-center border-t border-slate-100 pt-3">
+                    <div class="flex items-center gap-2">
+                        <span v-if="h.paymentStatus === 'paid'" class="inline-flex items-center gap-1.5 text-[10px] bg-green-50 text-green-600 font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-check"></i>已付款</span>
+                        <span v-if="h.paymentStatus === 'arrival'" class="inline-flex items-center gap-1.5 text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-hand-holding-dollar"></i>當地付款</span>
+                        <span v-if="h.paymentStatus === 'unpaid'" class="inline-flex items-center gap-1.5 text-[10px] bg-amber-50 text-amber-600 font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-clock"></i>{{ h.paymentDueDate ? h.paymentDueDate + ' 前付款' : '未付款' }}</span>
                     </div>
-                    <div class="flex-1 bg-slate-50 rounded-xl p-2.5 flex items-center gap-2">
-                        <div class="w-7 h-7 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center">
-                            <i class="fa-solid fa-right-from-bracket"></i>
-                        </div>
-                        <div>
-                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Check-out</div>
-                            <div class="font-mono font-bold">
-                                {{ h.checkOut || '—' }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="bg-slate-50 rounded-xl p-3 text-[11px] text-slate-600 flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center">
-                        <i class="fa-solid fa-dollar-sign"></i>
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">價錢 / 付款</div>
-                        <div class="font-mono font-bold">
-                            {{ h.price || '未填寫金額' }}
+                    <div v-if="h.price > 0" @click="showHotelPriceInHKD = !showHotelPriceInHKD" class="cursor-pointer active:scale-95 transition-transform select-none">
+                        <div v-if="showHotelPriceInHKD">
+                           <span class="text-[9px] text-slate-400 font-bold">HK$</span> <span class="font-mono font-bold text-slate-700 text-sm">{{ formatMoney(h.currency === 'ISK' ? h.price * exchangeRate : h.price) }}</span>
                         </div>
-                        <div class="text-[10px] text-slate-400" v-if="h.priceNote">
-                            {{ h.priceNote }}
+                        <div v-else>
+                           <span class="text-[9px] text-slate-400 font-bold">ISK</span> <span class="font-mono font-bold text-slate-700 text-sm">{{ formatMoney(h.currency === 'ISK' ? h.price : h.price / exchangeRate) }}</span>
                         </div>
                     </div>
-                </div>
-
-                <div class="bg-slate-50 rounded-xl p-3 text-[11px] text-slate-600 flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center">
-                        <i class="fa-solid fa-receipt"></i>
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">訂單號碼</div>
-                        <div class="font-mono font-bold">
-                            {{ h.bookingNo || '未填寫' }}
-                        </div>
-                    </div>
-                    <a v-if="h.bookingUrl"
-                       :href="h.bookingUrl"
-                       target="_blank"
-                       class="text-[10px] bg-indigo-500 text-white px-2 py-1 rounded-lg font-bold">
-                        訂單
-                    </a>
                 </div>
             </div>
         </div>
+
+        <button v-if="!syncStatus.isGuest" @click="openInfoModal('hotel', currentDay)" class="fixed bottom-24 right-6 w-14 h-14 bg-aurora text-white rounded-2xl shadow-xl shadow-blue-500/30 flex items-center justify-center z-30 hover:scale-105 active:scale-95 transition">
+            <i class="fa-solid fa-plus text-lg"></i>
+        </button>
     </div>
-
-    <!-- 右下角新增按鈕 -->
-    <button v-if="!syncStatus.isGuest"
-            @click="openHotelModal()"
-            class="fixed bottom-24 right-6 bg-indigo-500 text-white px-5 py-3 rounded-xl shadow-xl font-bold text-xs flex items-center gap-2 active:scale-95 transition z-30">
-        <i class="fa-solid fa-plus"></i> 新增住宿
-    </button>
-</div>
-
-
-    <!-- === TAB 5: COST (V104: Mobile Fix) === -->
+<!-- === TAB 5: COST (V104: Mobile Fix) === -->
     <div v-show="currentTab === 'budget'" class="px-6 flex-grow overflow-y-auto pt-4 pb-24">
         
         <!-- Total Cost -->
@@ -404,10 +332,7 @@
                 <!-- V104: Removed 'hidden sm:inline' to show ISK on mobile -->
                 <div class="flex items-center gap-2">
                     <span class="text-[9px] font-bold text-slate-400">小計:</span>
-                    <span class="text-[10px] font-bold font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-  HK$ {{ formatMoney(Math.round(dayGroup.totalHKD)) }}
-</span>
-
+                    <span class="text-[10px] font-bold font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded">HK$ {{ formatMoney(Math.round(dayGroup.totalHKD)) }}</span>
                     <span class="text-[9px] font-mono text-slate-400">(≈ ISK {{ formatMoney(Math.round(dayGroup.totalHKD / exchangeRate)) }})</span>
                 </div>
             </div>
@@ -432,7 +357,9 @@
             </div>
         </div>
 
-        <button v-if="!syncStatus.isGuest" @click="openExpenseModal" class="fixed bottom-24 right-6 bg-[#3282b8] text-white px-5 py-3 rounded-xl shadow-xl font-bold text-xs flex items-center gap-2 active:scale-95 transition z-30"><i class="fa-solid fa-plus"></i> 記一筆</button>
+        <button v-if="!syncStatus.isGuest" @click="openExpenseModal" class="fixed bottom-24 right-6 w-14 h-14 bg-aurora text-white rounded-2xl shadow-xl shadow-blue-500/30 flex items-center justify-center z-30 hover:scale-105 active:scale-95 transition">
+            <i class="fa-solid fa-plus text-lg"></i>
+        </button>
     </div>
 
     <!-- === TAB 6: INFO === -->
@@ -454,101 +381,104 @@
         <button @click="switchTab('info')" class="flex-1 flex flex-col items-center gap-1.5 transition-colors group" :class="currentTab === 'info' ? 'tab-active' : 'tab-inactive'"><div class="text-xl"><i class="fa-solid fa-circle-info"></i></div><span class="text-[9px] font-bold tracking-wide">資訊</span></button>
     </div>
 
-    <!-- Hotel Modal -->
-<div v-if="hotelModal.open" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="absolute inset-0 modal-overlay" @click="hotelModal.open=false"></div>
-    <div class="relative bg-white w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-8 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-4">
-            <div>
-                <h3 class="font-bold text-xl text-slate-800">
-                    Day {{ currentDay }} 住宿設定
-                </h3>
-                <p class="text-[10px] text-slate-400 mt-1">
-                    {{ getDateString(currentDay).date }}
-                </p>
-            </div>
-            <button @click="hotelModal.open=false"
-                    class="w-8 h-8 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
+    <!-- Modals -->
+    
+    <div v-if="infoModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6" @keyup.esc="infoModal.open=false">
+        <div class="absolute inset-0 modal-overlay" @click="infoModal.open=false"></div>
+        <div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl animate-slide-up max-h-[85vh] overflow-y-auto">
+            <h3 class="font-bold text-xl text-slate-800 mb-6">{{ infoForm.id ? '編輯' : '新增' }}住宿</h3>
 
-        <!-- 智能小工具列 -->
-        <div class="flex items-center justify-between mb-4 text-[11px]">
-            <button @click="copyYesterdayHotel"
-                    class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center gap-1 hover:bg-slate-200">
-                <i class="fa-solid fa-copy text-[10px]"></i>
-                複製昨天住宿
-            </button>
-            
-        </div>
-
-        <div class="space-y-4">
-            <div>
-                <label class="text-xs font-bold text-slate-400 mb-1.5 block">相片網址</label>
-                <input v-model="hotelForm.photo" class="modal-input text-xs" placeholder="可貼 booking.com / 官網圖片地址">
-            </div>
-            <div>
-                <label class="text-xs font-bold text-slate-400 mb-1.5 block">住宿 / 酒店名稱</label>
-                <input v-model="hotelForm.name" class="modal-input" placeholder="例如：Fosshotel Glacier Lagoon">
-            </div>
-            <div>
-                <label class="text-xs font-bold text-slate-400 mb-1.5 block">地址</label>
-                <textarea v-model="hotelForm.address" class="modal-input text-xs" rows="2" placeholder="完整地址，方便對應地圖"></textarea>
-            </div>
-            <div>
-                <label class="text-xs font-bold text-slate-400 mb-1.5 block">地圖連結 (Google Maps)</label>
-                <input v-model="hotelForm.mapUrl" class="modal-input text-xs" placeholder="https://maps.google.com/...">
-            </div>
-
-            <div class="flex gap-3">
-                <div class="w-1/2">
-                    <label class="text-xs font-bold text-slate-400 mb-1.5 block">Check-in 時間</label>
-                    <input v-model="hotelForm.checkIn" class="modal-input text-xs" placeholder="例如：15:00">
+            <div class="space-y-4">
+                <!-- 1. Date -->
+                <div>
+                    <label class="modal-label">日期</label>
+                    <div class="mb-1">
+                        <select v-model="infoForm.day" class="modal-input">
+                            <option v-for="d in totalDays" :key="d" :value="d">Day {{ d }} ({{ getDateString(d).date }})</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="w-1/2">
-                    <label class="text-xs font-bold text-slate-400 mb-1.5 block">Check-out 時間</label>
-                    <input v-model="hotelForm.checkOut" class="modal-input text-xs" placeholder="例如：11:00">
+
+                <!-- 2. Image -->
+                <div>
+                    <label class="modal-label">圖片連結 (選填)</label>
+                    <input v-model="infoForm.imgUrl" class="modal-input" placeholder="貼上圖片 URL">
                 </div>
-            </div>
 
-            <div>
-                <label class="text-xs font-bold text-slate-400 mb-1.5 block">價錢</label>
-                <input v-model="hotelForm.price" class="modal-input text-xs" placeholder="例如：HK$3,200 / ISK 40,000">
-            </div>
+                <!-- 3. Name -->
+                <div>
+                    <label class="modal-label">住宿名稱</label>
+                    <input v-model="infoForm.name" class="modal-input" placeholder="e.g. Hotel Vík">
+                </div>
 
-            <div>
-                <label class="text-xs font-bold text-slate-400 mb-1.5 block">付款狀態</label>
-                <input v-model="hotelForm.priceNote" class="modal-input text-xs" placeholder="已全付 / 到付 / 已付訂金 等">
-            </div>
+                <!-- 4. Address -->
+                <div>
+                    <label class="modal-label">地址</label>
+                    <div class="relative">
+                        <input v-model="infoForm.address" @change="autoLocateHotel" class="modal-input pr-8" placeholder="e.g. Klettsvegur 1-5, Vík">
+                        <i v-if="locating" class="fa-solid fa-spinner fa-spin absolute right-3 top-3 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
 
-            <div>
-                <label class="text-xs font-bold text-slate-400 mb-1.5 block">訂單號碼</label>
-                <input v-model="hotelForm.bookingNo" class="modal-input text-xs" placeholder="Booking / Agoda / 官網編號">
-            </div>
+                <!-- 5. Map -->
+                <div>
+                    <label class="modal-label">Google Maps 連結 (選填)</label>
+                    <input v-model="infoForm.mapUrl" class="modal-input" placeholder="手動貼上連結以覆蓋自動定位">
+                </div>
 
-            <div>
-                <label class="text-xs font-bold text-slate-400 mb-1.5 block">訂單連結 (選填)</label>
-                <input v-model="hotelForm.bookingUrl" class="modal-input text-xs" placeholder="可貼 booking.com 訂單頁 URL">
-            </div>
-        </div>
+                <!-- 6. Price -->
+                <div>
+                    <label class="modal-label">價錢</label>
+                    <div class="flex gap-3">
+                        <div class="flex-grow"><input v-model.number="infoForm.price" type="number" class="modal-input font-mono" placeholder="0"></div>
+                        <select v-model="infoForm.currency" class="modal-input w-24 font-bold text-slate-600"><option value="ISK">ISK</option><option value="HKD">HKD</option></select>
+                    </div>
+                </div>
 
-        <div class="mt-6 flex gap-3">
-            <button v-if="hotelModal.editIndex !== null"
-                    @click="deleteHotel"
-                    class="w-20 py-3 bg-red-50 text-red-400 rounded-2xl font-bold text-xs hover:bg-red-100">
-                刪除
-            </button>
-            <button @click="saveHotel"
-                    class="flex-1 py-3 bg-indigo-500 text-white rounded-2xl font-bold shadow-lg shadow-indigo-500/20 active:scale-95 text-sm">
-                儲存住宿
-            </button>
+                <!-- 7. Payment Status -->
+                <div>
+                    <label class="modal-label">付款狀態</label>
+                    <select v-model="infoForm.paymentStatus" class="modal-input">
+                        <option value="paid">已付款</option>
+                        <option value="arrival">當地付款</option>
+                        <option value="unpaid">未付款</option>
+                    </select>
+                    <input v-if="infoForm.paymentStatus === 'unpaid'" v-model="infoForm.paymentDueDate" type="date" class="modal-input mt-2 w-36 text-xs">
+                </div>
+
+                <!-- 8. Cancellation -->
+                <div>
+                    <label class="modal-label">取消期限 (選填)</label>
+                    <input v-model="infoForm.freeCancelDate" type="date" class="modal-input">
+                </div>
+
+                <!-- 9. Check-in/out -->
+                <div>
+                    <label class="modal-label">入住/退房時間</label>
+                    <div class="flex gap-3">
+                        <input v-model="infoForm.checkInTime" type="time" class="modal-input text-center flex-1">
+                        <input v-model="infoForm.checkOutTime" type="time" class="modal-input text-center flex-1">
+                    </div>
+                </div>
+
+                <!-- 10. Booking Ref -->
+                <div>
+                    <label class="modal-label">訂單號碼 (選填)</label>
+                    <input v-model="infoForm.bookingRef" class="modal-input" placeholder="e.g. 123456789">
+                </div>
+
+                <!-- 11. Booking Link -->
+                <div>
+                    <label class="modal-label">訂單連結 (選填)</label>
+                    <input v-model="infoForm.link" class="modal-input" placeholder="e.g. https://booking.com/your_order">
+                </div>
+            </div><div class="flex gap-3 mt-8">
+                <button @click="infoModal.open=false" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold text-slate-500 hover:bg-slate-200 transition">取消</button>
+                <button @click="saveInfo" class="flex-1 py-3 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition">儲存</button>
+            </div>
         </div>
     </div>
-</div>
-
-
-    <div v-if="rateModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6"><div class="absolute inset-0 modal-overlay" @click="rateModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl animate-slide-up"><h3 class="font-bold text-xl text-slate-800 mb-6">設定匯率</h3><div class="relative mb-8"><input type="number" v-model="exchangeRate" class="text-4xl text-center border-b-2 border-slate-100 w-full pb-2 font-mono text-slate-700 focus:outline-none focus:border-blue-400" step="0.001"><div class="text-xs text-slate-400 mt-2">1 ISK = HK$</div></div><button @click="rateModal.open=false" class="w-full py-3.5 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">確認設定</button></div></div>
+<div v-if="rateModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6"><div class="absolute inset-0 modal-overlay" @click="rateModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl animate-slide-up"><h3 class="font-bold text-xl text-slate-800 mb-6">設定匯率</h3><div class="relative mb-8"><input type="number" v-model="exchangeRate" class="text-4xl text-center border-b-2 border-slate-100 w-full pb-2 font-mono text-slate-700 focus:outline-none focus:border-blue-400" step="0.001"><div class="text-xs text-slate-400 mt-2">1 ISK = HK$</div></div><button @click="rateModal.open=false" class="w-full py-3.5 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20">確認設定</button></div></div>
     <div v-if="syncModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-6"><div class="absolute inset-0 modal-overlay" @click="syncModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center space-y-4 animate-slide-up max-h-[85vh] overflow-y-auto"><div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto text-2xl mb-2"><i class="fa-solid fa-cloud-arrow-up"></i></div><h3 class="font-bold text-xl text-slate-800">GitHub 雲端同步</h3><div v-if="syncStatus.isGuest"><div class="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-4"><p class="text-xs text-orange-600 font-bold mb-2">您目前是「訪客模式」</p><p class="text-[10px] text-slate-500">您可以檢視所有行程和最新花費，但無法修改。</p></div><button @click="pullFromCloud" class="w-full py-3 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg active:scale-95 transition text-xs mb-2"><i class="fa-solid fa-rotate mr-2"></i> 重新整理 (下載最新資料)</button><button @click="resetSync" class="w-full py-3 bg-slate-100 text-slate-500 rounded-xl font-bold active:scale-95 transition text-xs"><i class="fa-solid fa-right-from-bracket mr-2"></i> 登出/切換 ID</button></div><div v-else><div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 text-left"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">同步設定</div><input v-model="gistConfig.id" class="modal-input text-xs mb-2" placeholder="貼上 Gist ID (必填)"><input v-model="gistConfig.token" class="modal-input text-xs" type="password" placeholder="GitHub Token (訪客免填)"><div class="text-[9px] text-slate-400 mt-2 leading-relaxed"><span class="text-blue-500 font-bold">主揪請填 Token</span> 以便上傳修改。<br><span class="text-orange-500 font-bold">隊友/訪客</span> 只需填 ID 即可下載。</div></div><div class="flex gap-2 mb-2"><button @click="pullFromCloud" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold active:scale-95 transition text-xs"><i class="fa-solid fa-cloud-arrow-down mr-2"></i> 下載雲端</button><button @click="pushToCloud" class="flex-1 py-3 bg-[#3282b8] text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition text-xs"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> 上傳同步</button></div><div v-if="gistConfig.id" class="mt-6 border-t pt-4"><div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">給朋友的 ID</div><div class="bg-slate-100 p-2 rounded-lg text-xs font-mono text-slate-600 break-all mb-2 select-all">{{ gistConfig.id }}</div><button @click="copyID" class="w-full py-3 bg-green-500 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 active:scale-95 transition text-xs"><i class="fa-regular fa-copy mr-2"></i> 複製 ID 傳給朋友</button></div></div><button @click="syncModal.open=false" class="w-full py-3 bg-slate-100 rounded-xl font-bold text-slate-500 mt-2">關閉</button></div></div>
     <div v-if="expenseModal.open" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"><div class="absolute inset-0 modal-overlay" @click="expenseModal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 shadow-2xl animate-slide-up"><h3 class="font-bold text-xl text-slate-800 mb-6">{{ expenseModal.mode==='edit'?'編輯':'記一筆' }}消費</h3><div class="space-y-4"><div><label class="text-xs font-bold text-slate-400 mb-1.5 block">日期</label><select v-model="expenseForm.day" class="modal-input"><option v-for="d in totalDays" :value="d">Day {{d}} ({{ getDateString(d).date }})</option></select></div><div><label class="text-xs font-bold text-slate-400 mb-1.5 block">消費項目</label><input v-model="expenseForm.title" class="modal-input" placeholder="例如: N1 入油"></div><div class="flex gap-3"><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">種類</label><select v-model="expenseForm.type" class="modal-input"><option v-for="(v,k) in costTypes" :value="k">{{v.label}}</option></select></div><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">幣別</label><div class="flex bg-slate-50 rounded-xl p-1 border border-slate-200"><button @click="expenseForm.currency='ISK'" class="flex-1 py-2 rounded-lg text-xs font-bold transition" :class="expenseForm.currency==='ISK'?'bg-white shadow text-[#3282b8]':'text-slate-400'">ISK</button><button @click="expenseForm.currency='HK$'" class="flex-1 py-2 rounded-lg text-xs font-bold transition" :class="expenseForm.currency==='HK$'?'bg-white shadow text-red-500':'text-slate-400'">HK$</button></div></div></div><div><label class="text-xs font-bold text-slate-400 mb-1.5 block">金額</label><input v-model="expenseForm.amount" type="number" class="modal-input font-mono text-xl" placeholder="0"></div><button @click="saveManualExpense" class="w-full py-4 bg-[#3282b8] text-white rounded-2xl font-bold shadow-lg shadow-blue-500/20 mt-4 active:scale-95 transition">儲存記錄</button></div></div></div>
     <div v-if="modal.open" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"><div class="absolute inset-0 modal-overlay transition-opacity" @click="modal.open=false"></div><div class="relative bg-white w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-6"><h3 class="font-extrabold text-xl text-slate-800">{{ modal.mode==='add'?'新增':'編輯' }}行程</h3><button @click="modal.open=false" class="w-8 h-8 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100"><i class="fa-solid fa-xmark"></i></button></div><div class="space-y-5"><div class="flex gap-4"><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">時間</label><input type="time" v-model="form.time" class="modal-input"></div><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">抵達(選填)</label><input type="time" v-model="form.endTime" class="modal-input"></div></div><div class="flex gap-4"><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">種類</label><select v-model="form.type" class="modal-input"><option v-for="(v,k) in categoryConfig" :value="k">{{v.emoji}} {{v.label}}</option></select></div><div class="w-1/2"><label class="text-xs font-bold text-slate-400 mb-1.5 block">距離</label><input v-model="form.distance" class="modal-input"></div></div><div><label class="text-xs font-bold text-[#3282b8] mb-1.5 block">1. 圖片網址</label><input v-model="form.imgUrl" class="modal-input text-xs" placeholder="留空將由 AI 自動產生"></div><div><label class="text-xs font-bold text-[#3282b8] mb-1.5 block">2. 標題</label><input v-model="form.title" class="modal-input text-lg placeholder:text-slate-300" placeholder="例如: Skógafoss"></div><div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2"><label class="text-xs font-bold text-[#3282b8] block">3. 地點 & 定位</label><div class="flex gap-2"><input v-model="form.location" class="modal-input bg-white" placeholder="輸入地點名稱搜尋"><button @click="autoLocate" class="w-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center transition active:scale-95"><i class="fa-solid" :class="locating?'fa-spinner fa-spin':'fa-map-location-dot'"></i></button></div><div class="flex gap-2 text-[10px] items-center"><input type="number" v-model.number="form.lat" class="border p-1.5 rounded-lg w-20 text-center" placeholder="Lat"><input type="number" v-model.number="form.lng" class="border p-1.5 rounded-lg w-20 text-center" placeholder="Lng"><span v-if="form.lat" class="text-green-600 font-bold ml-auto flex items-center gap-1"><i class="fa-solid fa-check-circle"></i> 已定位</span></div><input v-model="form.mapUrl" class="modal-input bg-white text-xs text-blue-500" placeholder="Google Maps 連結 (選填)"></div><div class="bg-blue-50/30 p-4 rounded-2xl border border-blue-100/50"><div class="flex justify-between mb-2 items-center"><label class="text-xs font-bold text-[#3282b8]">4. 相關費用</label><button @click="addCost" class="text-[10px] bg-white border border-blue-200 text-blue-500 px-2 py-1 rounded-lg font-bold hover:bg-blue-50"><i class="fa-solid fa-plus"></i> 新增</button></div><div v-for="(c,i) in form.costs" :key="i" class="flex flex-col gap-1.5 mb-2 bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm"><div class="flex gap-2 items-center"><select v-model="c.type" class="bg-slate-50 text-xs w-[35%] border-none rounded-lg py-1.5 font-bold text-slate-600"><option v-for="(v,k) in costTypes" :value="k">{{v.label}}</option></select><button @click="c.currency = c.currency==='ISK'?'HK$':'ISK'" class="text-[10px] w-[15%] border rounded-lg py-1.5 font-bold transition-colors" :class="c.currency==='HK$'?'text-red-500 bg-red-50 border-red-100':'text-blue-500 bg-blue-50 border-blue-100'">{{c.currency}}</button><input v-model="c.amount" @blur="formatCostInput(c)" class="text-xs w-[40%] bg-slate-50 border-none rounded-lg px-2 py-1.5 text-right font-mono font-bold" placeholder="0"><button @click="form.costs.splice(i,1)" class="text-slate-300 hover:text-red-400 w-[10%]"><i class="fa-solid fa-xmark"></i></button></div><input v-if="c.type==='other'" v-model="c.name" class="text-xs border border-slate-100 bg-slate-50 rounded-lg px-2 py-1.5 w-full" placeholder="費用名稱"></div></div><div><div class="flex justify-between mb-2 items-center"><label class="text-xs font-bold text-[#3282b8]">5. 備註</label><button @click="autoGenerateDesc" class="text-[10px] bg-purple-100 text-purple-600 px-3 py-1 rounded-full font-bold shadow-sm hover:bg-purple-200 transition"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 撰寫</button></div><textarea v-model="form.desc" class="modal-input leading-relaxed" rows="3" placeholder="輸入行程備註..."></textarea></div></div><div class="mt-8 flex gap-4"><button v-if="modal.mode==='edit'" @click="deleteItem" class="p-4 bg-red-50 text-red-400 rounded-2xl hover:bg-red-100 transition"><i class="fa-solid fa-trash-can text-lg"></i></button><button @click="saveItem" class="flex-1 bg-aurora text-white rounded-2xl py-4 font-bold text-lg shadow-xl shadow-blue-500/20 active:scale-95 transition">儲存確認</button></div></div></div>
@@ -563,7 +493,7 @@ const costTypes = {
     parking: { label: '停車費', bg: 'bg-slate-100 text-slate-500', icon: 'fa-square-parking' }, 
     toll: { label: '路費', bg: 'bg-slate-100 text-slate-500', icon: 'fa-road' }, 
     ticket: { label: '入場費', bg: 'bg-purple-50 text-purple-500', icon: 'fa-ticket' }, 
-    hotel: { label: '住宿費', bg: 'bg-indigo-50 text-indigo-500', icon: 'fa-bed' }, 
+    stay: { label: '住宿費', bg: 'bg-indigo-50 text-indigo-500', icon: 'fa-bed' }, 
     food: { label: '餐飲', bg: 'bg-orange-50 text-orange-400', icon: 'fa-utensils' }, 
     gas: { label: '入油費', bg: 'bg-red-50 text-red-500', icon: 'fa-gas-pump' }, 
     shopping: { label: '購物', bg: 'bg-pink-50 text-pink-400', icon: 'fa-bag-shopping' },
@@ -594,170 +524,29 @@ createApp({
         const syncStatus = reactive({ isGuest: false, unsaved: false });
         const showBanner = ref(true); 
 
-const defaultHotelPhoto = 'https://picsum.photos/800/450?blur=2';
-
-const hotelModal = reactive({
-    open: false,
-    editIndex: null // null = 新增；數字 = 編輯 infoData.hotels 的 index
-});
-
-const hotelForm = reactive({
-    day: 1,
-    name: '',
-    photo: '',
-    address: '',
-    mapUrl: '',
-    checkIn: '',
-    checkOut: '',
-    price: '',
-    priceNote: '',
-    bookingNo: '',
-    bookingUrl: '',
-});
-
-// 只顯示當前 Day 的酒店
-const filteredHotels = computed(() =>
-    infoData.value.hotels.filter(h => h.day === currentDay.value)
-);
-
-const handleHotelImageError = (e) => {
-    e.target.src = defaultHotelPhoto + '&seed=' + (Math.random()*1000|0);
-};
-
-const openHotelModal = (hotel = null, index = null) => {
-    hotelModal.open = true;
-    hotelModal.editIndex = index;
-    hotelForm.day = currentDay.value;
-    hotelForm.name = hotel?.name || '';
-    hotelForm.photo = hotel?.photo || '';
-    hotelForm.address = hotel?.address || '';
-    hotelForm.mapUrl = hotel?.mapUrl || '';
-    hotelForm.checkIn = hotel?.checkIn || '15:00';
-    hotelForm.checkOut = hotel?.checkOut || '11:00';
-    hotelForm.price = hotel?.price || '';
-    hotelForm.priceNote = hotel?.priceNote || '';
-    hotelForm.bookingNo = hotel?.bookingNo || '';
-    hotelForm.bookingUrl = hotel?.bookingUrl || '';
-    hotelForm.syncToExpense = true;  // 每次打開預設勾選
-};
-
-const copyYesterdayHotel = () => {
-    if (currentDay.value <= 1 || !infoData.value.hotels || infoData.value.hotels.length === 0) return;
-
-    const prevDay = currentDay.value - 1;
-    const prevHotels = infoData.value.hotels.filter(h => h.day === prevDay);
-    if (prevHotels.length === 0) return;
-
-    const last = prevHotels[prevHotels.length - 1];
-
-    hotelModal.open = true;
-    hotelModal.editIndex = null;
-    hotelForm.day = currentDay.value;
-    hotelForm.name = last.name || '';
-    hotelForm.photo = last.photo || '';
-    hotelForm.address = last.address || '';
-    hotelForm.mapUrl = last.mapUrl || '';
-    hotelForm.checkIn = last.checkIn || '15:00';
-    hotelForm.checkOut = last.checkOut || '11:00';
-    hotelForm.price = last.price || '';
-    hotelForm.priceNote = last.priceNote || '';
-    hotelForm.bookingNo = last.bookingNo || '';
-    hotelForm.bookingUrl = last.bookingUrl || '';
-    hotelForm.syncToExpense = true;
-};
-
-const saveHotel = () => {
-    const payload = {
-        day: hotelForm.day,
-        name: hotelForm.name.trim(),
-        photo: hotelForm.photo.trim(),
-        address: hotelForm.address.trim(),
-        mapUrl: hotelForm.mapUrl.trim(),
-        checkIn: hotelForm.checkIn.trim(),
-        checkOut: hotelForm.checkOut.trim(),
-        price: hotelForm.price.trim(),
-        priceNote: hotelForm.priceNote.trim(),
-        bookingNo: hotelForm.bookingNo.trim(),
-        bookingUrl: hotelForm.bookingUrl.trim()
-    };
-
-    if (!infoData.value.hotels) infoData.value.hotels = [];
-
-    if (hotelModal.editIndex === null) {
-        infoData.value.hotels.push(payload);
-    } else {
-        infoData.value.hotels.splice(hotelModal.editIndex, 1, payload);
-    }
-
-    // 新增：同步到花費
-    addOrUpdateHotelExpense(payload);
-
-    hotelModal.open = false;
-};
-
-const addOrUpdateHotelExpense = (hotel) => {
-    if (!hotel.price) return;
-
-    // 從字串抽出金額與幣別，簡單規則：看到 HK$ 就用 HK$，否則當 ISK
-    let currency = 'ISK';
-    let raw = hotel.price;
-    if (raw.includes('HK$')) currency = 'HK$';
-    const numMatch = raw.replace(/,/g, '').match(/(\d+(\.\d+)?)/);
-    if (!numMatch) return;
-
-    const amount = Number(numMatch[1]);
-    if (!amount) return;
-
-    const title = hotel.name || '未命名住宿';
-
-    // 在 manualExpenses 或 allExpenses 裡新增一筆住宿花費
-    if (!itineraryData.value[hotel.day]) {
-        itineraryData.value[hotel.day] = {
-            date: `DAY ${hotel.day}`,
-            region: '',
-            weather: 'sunny',
-            temp: '',
-            activities: [],
-            manualExpenses: []
-        };
-    }
-    if (!itineraryData.value[hotel.day].manualExpenses) {
-        itineraryData.value[hotel.day].manualExpenses = [];
-    }
-
-    const list = itineraryData.value[hotel.day].manualExpenses;
-    const existing = list.find(e => e.type === 'hotel' && e.title === title);
-
-    const expense = {
-        id: existing?.id || Date.now(),
-        day: hotel.day,
-        title,
-        type: 'hotel', // 這個保持 'hotel'，方便用在 costTypes['hotel']
-        currency,
-        amount
-    };
-
-    if (existing) {
-        Object.assign(existing, expense);
-    } else {
-        list.push(expense);
-    }
-};
-
-
-const removeHotel = (idx) => {
-    if (!confirm('確定刪除此住宿？')) return;
-    infoData.value.hotels.splice(idx, 1);
-};
-
-const deleteHotel = () => {
-    if (hotelModal.editIndex === null) return;
-    removeHotel(hotelModal.editIndex);
-    hotelModal.open = false;
-};
-
         const form = reactive({ id: null, time: '', endTime: '', type: 'camera', title: '', distance: '', location: '', lat: null, lng: null, mapUrl: '', imgUrl: '', costs: [], desc: '' });
-        const infoForm = reactive({ name: '', dates: '', link: '' });
+        
+        const showHotelPriceInHKD = ref(false);
+        const infoForm = reactive({
+            id: null,
+            day: 1,
+            name: '', 
+            address: '',
+            lat: null,
+            lng: null,
+            mapUrl: '',
+            imgUrl: '',
+            price: null, 
+            currency: 'ISK',
+            paymentStatus: 'unpaid', 
+            paymentDueDate: '',
+            checkInTime: '15:00',
+            checkOutTime: '11:00',
+            bookingRef: '',
+            freeCancelDate: '',
+            link: ''
+        });
+
         const expenseForm = reactive({ id: null, originalDay: 1, day: 1, type: 'food', title: '', currency: 'ISK', amount: '' });
         
         let mapInstance = null; 
@@ -884,9 +673,117 @@ const deleteHotel = () => {
         const saveItem = () => { if (!itineraryData.value[currentDay.value].activities) itineraryData.value[currentDay.value].activities = []; const acts = itineraryData.value[currentDay.value].activities; const data = JSON.parse(JSON.stringify(form)); data.costs.forEach(c => c.amount = formatMoney(c.amount)); if(modal.mode === 'add') acts.push(data); else { const idx = acts.findIndex(i => i.id === form.id); if(idx !== -1) acts[idx] = data; } modal.open = false; }; 
         const deleteItem = () => { if(confirm('確定刪除?')) { const acts = itineraryData.value[currentDay.value].activities; const idx = acts.findIndex(i => i.id === form.id); if(idx !== -1) acts.splice(idx, 1); modal.open = false; } };
         
-        const openInfoModal = (type) => { infoModal.type = type; Object.assign(infoForm, { name: '', dates: '', link: '' }); infoModal.open = true; }; 
-        const saveInfo = () => { if(infoModal.type === 'hotel') infoData.value.hotels.push({ ...infoForm }); infoModal.open = false; }; 
-        const removeInfo = (list, idx) => { if(confirm('刪除?')) infoData.value[list].splice(idx, 1); };
+        
+        const openInfoModal = (type, day) => {
+            Object.assign(infoForm, { 
+                id: null, 
+                day: day || 1, 
+                name: '', 
+                address: '', 
+                lat: null, 
+                lng: null, 
+                mapUrl: '', 
+                imgUrl: '', 
+                price: null, 
+                currency: 'ISK', 
+                paymentStatus: 'unpaid', 
+                paymentDueDate: '', 
+                checkInTime: '15:00', 
+                checkOutTime: '11:00', 
+                bookingRef: '', 
+                freeCancelDate: '',
+                link: '' 
+            });
+            infoModal.type = type;
+            infoModal.open = true;
+        };
+ 
+        
+        const saveInfo = () => {
+            infoModal.open = false;
+            setTimeout(() => {
+                try {
+                    if (infoModal.type === 'hotel') {
+                        const formData = JSON.parse(JSON.stringify(infoForm));
+                        const uniqueSuffix = Date.now() + '_' + Math.floor(Math.random() * 1000);
+
+                        if (!formData.id) formData.id = 'hotel_' + uniqueSuffix;
+
+                        const existingIndex = infoData.value.hotels.findIndex(h => h.id === formData.id);
+
+                        // Update Hotel List
+                        if (existingIndex > -1) {
+                             const oldHotel = infoData.value.hotels[existingIndex];
+                             const oldDay = oldHotel.day;
+                             if (itineraryData.value[oldDay]) {
+                                 if(itineraryData.value[oldDay].activities) 
+                                    itineraryData.value[oldDay].activities = itineraryData.value[oldDay].activities.filter(a => a.syncId !== oldHotel.id);
+                                 if(itineraryData.value[oldDay].manualExpenses)
+                                    itineraryData.value[oldDay].manualExpenses = itineraryData.value[oldDay].manualExpenses.filter(e => e.syncId !== oldHotel.id);
+                             }
+                             infoData.value.hotels[existingIndex] = formData;
+                        } else {
+                             infoData.value.hotels.push(formData);
+                        }
+
+                        // Sync
+                        const targetDay = formData.day;
+                        if(!itineraryData.value[targetDay]) {
+                             itineraryData.value[targetDay] = { date: `DAY ${targetDay}`, region: "", weather: "sunny", temp: "", activities: [], manualExpenses: [] };
+                        }
+
+                        if (itineraryData.value[targetDay]) {
+                            if (!itineraryData.value[targetDay].activities) itineraryData.value[targetDay].activities = [];
+
+                            // Prepare Costs Array
+                            const hotelCosts = [];
+                            if (formData.price && !isNaN(parseFloat(formData.price)) && parseFloat(formData.price) > 0) {
+                                hotelCosts.push({
+                                    amount: parseFloat(formData.price),
+                                    currency: formData.currency || 'ISK',
+                                    type: 'stay', 
+                                    name: formData.name || '住宿'
+                                });
+                            }
+
+                            // Activity
+                            itineraryData.value[targetDay].activities.push({
+                                id: 'act_' + uniqueSuffix,
+                                syncId: formData.id,
+                                type: 'hotel',
+                                title: formData.name || '住宿', 
+                                time: formData.checkInTime || '15:00',
+                                endTime: formData.checkOutTime,
+                                location: formData.address || '',
+                                lat: formData.lat,
+                                lng: formData.lng,
+                                desc: '',
+                                imgUrl: formData.imgUrl || '',
+                                costs: hotelCosts
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Save error:", e);
+                    alert("儲存錯誤: " + e.message);
+                }
+            }, 50);
+        };
+ 
+        
+        const removeInfo = (list, id) => { 
+            if(confirm('確定要刪除此項住宿及其相關的行程和開支嗎？此操作無法復原。')) { 
+                const hotelIndex = infoData.value[list].findIndex(h => h.id === id); 
+                if (hotelIndex === -1) return; 
+                const hotel = infoData.value[list][hotelIndex]; 
+                if (itineraryData.value[hotel.day]) { 
+                    itineraryData.value[hotel.day].activities = itineraryData.value[hotel.day].activities.filter(a => a.syncId !== id); 
+                    itineraryData.value[hotel.day].manualExpenses = itineraryData.value[hotel.day].manualExpenses.filter(e => e.syncId !== id); 
+                } 
+                infoData.value[list].splice(hotelIndex, 1); 
+            } 
+        };
+
         
         const autoLocate = async () => { if(!form.location) return alert("請輸入地點"); locating.value = true; try { const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(form.location + " Iceland") + '&limit=1'); const data = await res.json(); if(data.length) { form.lat = parseFloat(data[0].lat); form.lng = parseFloat(data[0].lon); form.mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(form.location); } else alert("找不到地點"); } catch(e) { alert("定位錯誤"); } locating.value = false; }; 
         const autoGenerateDesc = () => { const t = form.title || ''; if(t.includes('瀑布')) form.desc = '壯觀瀑布，注意防水。'; else if(t.includes('超市')) form.desc = '補給時間，Bonus 最平。'; else form.desc = '前往 ' + t + ' 探索美景。'; };
@@ -896,18 +793,32 @@ const deleteHotel = () => {
         const getCategoryStyle = (t) => categoryConfig[t] || categoryConfig.other; 
         const setWeather = (k) => { itineraryData.value[currentDay.value].weather = k; weatherMenuOpen.value = false; };
         
-        return { currentTab, currentDay, totalDays, itineraryData, infoData, exchangeRate, mapFilter, modal, infoModal, rateModal, syncModal, expenseModal, welcomeModal, form, infoForm, expenseForm, weatherMenuOpen, locating, categoryConfig, costTypes, weatherTypes, switchTab, getDateString, addDay, deleteLastDay, safeCurrentItinerary, currentActivities, getCurrentWeather, setWeather, getCardImage, handleImageError, getCategoryStyle, formatMoney, parseMoney, openAddModal, openEditModal, saveItem, deleteItem, addCost, formatCostInput, openInfoModal, saveInfo, removeInfo, autoLocate, autoGenerateDesc, gistConfig, syncStatus, pullFromCloud, pushToCloud, copyID, resetSync, openGuestSetup, totalTripCostHKD, categoryStats, formatTemp, getCostLabel, groupedFlights, allExpenses, groupedExpenses, openExpenseModal, openEditExpenseModal, saveManualExpense, deleteManualExpense, showBanner, mapMode, updateMapLayers,defaultHotelPhoto,
-hotelModal,
-hotelForm,
-filteredHotels,
-openHotelModal,
-saveHotel,
-removeHotel,
-deleteHotel,
-handleHotelImageError,
-copyYesterdayHotel,
-addOrUpdateHotelExpense,
- };
+        
+        const currentDayHotels = computed(() => {
+            return infoData.value.hotels.filter(h => h.day === currentDay.value).sort((a,b) => a.checkInTime.localeCompare(b.checkInTime));
+        });
+
+        const openEditInfoModal = (type, hotel) => {
+            Object.assign(infoForm, hotel);
+            infoModal.type = type;
+            infoModal.open = true;
+        };
+
+        const autoLocateHotel = async () => {
+            if(!infoForm.address) return;
+            locating.value = true;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(infoForm.address + " Iceland")}&limit=1`);
+                const data = await res.json();
+                if (data.length) {
+                    infoForm.lat = parseFloat(data[0].lat);
+                    infoForm.lng = parseFloat(data[0].lon);
+                    infoForm.mapUrl = `https://www.google.com/maps/search/?api=1&query=${infoForm.lat},${infoForm.lng}`;
+                } else { alert("找不到地點"); }
+            } catch(e) { alert("定位錯誤"); }
+            locating.value = false;
+        };
+return { currentTab, currentDay, totalDays, itineraryData, infoData, exchangeRate, mapFilter, modal, infoModal, rateModal, syncModal, expenseModal, welcomeModal, form, infoForm, expenseForm, weatherMenuOpen, locating, categoryConfig, costTypes, weatherTypes, switchTab, getDateString, addDay, deleteLastDay, safeCurrentItinerary, currentActivities, getCurrentWeather, setWeather, getCardImage, handleImageError, getCategoryStyle, formatMoney, parseMoney, openAddModal, openEditModal, saveItem, deleteItem, addCost, formatCostInput, openInfoModal, saveInfo, removeInfo, autoLocate, autoGenerateDesc, gistConfig, syncStatus, pullFromCloud, pushToCloud, copyID, resetSync, openGuestSetup, totalTripCostHKD, categoryStats, formatTemp, getCostLabel, groupedFlights, allExpenses, groupedExpenses, openExpenseModal, openEditExpenseModal, saveManualExpense, deleteManualExpense, showBanner, mapMode, updateMapLayers, showHotelPriceInHKD, currentDayHotels, openEditInfoModal, autoLocateHotel };
     }
 }).mount('#app');
 </script>
